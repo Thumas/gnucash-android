@@ -46,7 +46,6 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FilterQueryProvider;
 import android.widget.ImageView;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -82,6 +81,7 @@ import org.gnucash.android.ui.util.RecurrenceParser;
 import org.gnucash.android.ui.util.RecurrenceViewClickListener;
 import org.gnucash.android.ui.util.widget.CalculatorEditText;
 import org.gnucash.android.ui.util.widget.TransactionTypeSwitch;
+import org.gnucash.android.ui.util.widget.searchablespinner.SearchableSpinner;
 import org.gnucash.android.util.QualifiedAccountNameCursorAdapter;
 
 import java.math.BigDecimal;
@@ -180,7 +180,8 @@ public class TransactionFormFragment extends Fragment implements
 	/**
 	 * Spinner for selecting the transfer account
 	 */
-	@BindView(R.id.input_transfer_account_spinner) Spinner mTransferAccountSpinner;
+    @BindView(R.id.input_transfer_account_spinner)
+    SearchableSpinner mTransferAccountSpinner;
 
     /**
      * Checkbox indicating if this transaction should be saved as a template or not
@@ -318,8 +319,10 @@ public class TransactionFormFragment extends Fragment implements
         }
 
         setListeners();
+
         //updateTransferAccountsList must only be called after initializing mAccountsDbAdapter
         updateTransferAccountsList();
+
         mTransferAccountSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             /**
              * Flag for ignoring first call to this listener.
@@ -329,9 +332,12 @@ public class TransactionFormFragment extends Fragment implements
 
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+
                 removeFavoriteIconFromSelectedView((TextView) view);
 
-                if (mSplitsList.size() == 2) { //when handling simple transfer to one account
+                if (mSplitsList.size() == 2) {
+                    //when handling simple transfer to one account
+
                     for (Split split : mSplitsList) {
                         if (!split.getAccountUID().equals(mAccountUID)) {
                             split.setAccountUID(mAccountsDbAdapter.getUID(id));
@@ -339,10 +345,12 @@ public class TransactionFormFragment extends Fragment implements
                         // else case is handled when saving the transactions
                     }
                 }
+
                 if (!userInteraction) {
                     userInteraction = true;
                     return;
                 }
+
                 startTransferFunds();
             }
 
@@ -358,6 +366,8 @@ public class TransactionFormFragment extends Fragment implements
                 //nothing to see here, move along
             }
         });
+
+        mTransferAccountSpinner.setTitle(getString(R.string.select_transfer_account));
 
         ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
         assert actionBar != null;
@@ -596,7 +606,8 @@ public class TransactionFormFragment extends Fragment implements
 		mCursor = mAccountsDbAdapter.fetchAccountsOrderedByFavoriteAndFullName(conditions, new String[]{mAccountUID, AccountType.ROOT.name()});
 
         mAccountCursorAdapter = new QualifiedAccountNameCursorAdapter(getActivity(), mCursor);
-		mTransferAccountSpinner.setAdapter(mAccountCursorAdapter);
+
+        mTransferAccountSpinner.setAdapter(mAccountCursorAdapter);
 	}
 
     /**

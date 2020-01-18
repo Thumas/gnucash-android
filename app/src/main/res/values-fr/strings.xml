@@ -450,4 +450,5 @@
     <string name="prefs_ui_category_title">Préférences d\'ergonomie</string>
     <string name="prefs_ui_title_use_double_back_button_press_to_quit">Double confirmation pour Quitter</string>
     <string name="prefs_ui_summary_use_double_back_button_press_to_quit">Appuyer deux fois de suite sur le bouton \"BACK\" pour Quitter l\'application</string>
+    <string name="select_transfer_account">Selectionner le Compte associé</string>
 </resources>
