@@ -702,15 +702,20 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
      * GnuCash ROOT accounts and hidden accounts will not be included in the result set.
      * @return {@link Cursor} to all account records
      */
-    public Cursor fetchAllRecordsOrderedByFullName(){
-        Log.v(LOG_TAG, "Fetching all accounts from db");
-        String selection =  AccountEntry.COLUMN_HIDDEN + " = 0 AND " + AccountEntry.COLUMN_TYPE + " != ?" ;
+    public Cursor fetchAllRecordsOrderedByFullName() {
+
+        Log.v(LOG_TAG,
+              "Fetching all accounts from db");
+
+        String selection = AccountEntry.COLUMN_HIDDEN + " = 0 AND " + AccountEntry.COLUMN_TYPE + " != ?";
+
         return mDb.query(AccountEntry.TABLE_NAME,
-                null,
-                selection,
-                new String[]{AccountType.ROOT.name()},
-                null, null,
-                AccountEntry.COLUMN_FULL_NAME + " ASC");
+                         null,
+                         selection,
+                         new String[]{AccountType.ROOT.name()},
+                         null,
+                         null,
+                         AccountEntry.COLUMN_FULL_NAME + " ASC");
     }
 
     /**
@@ -755,11 +760,19 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
      * @param whereArgs where args
      * @return Cursor set of accounts which fulfill <code>where</code>
      */
-    public Cursor fetchAccountsOrderedByFavoriteAndFullName(String where, String[] whereArgs) {
-        Log.v(LOG_TAG, "Fetching all accounts from db where " + where + " order by Favorite then Name");
+    public Cursor fetchAccountsOrderedByFavoriteAndFullName(String where,
+                                                            String[] whereArgs) {
+
+        Log.v(LOG_TAG,
+              "Fetching all accounts from db where " + where + " order by Favorite then Name");
+
         return mDb.query(AccountEntry.TABLE_NAME,
-                null, where, whereArgs, null, null,
-                AccountEntry.COLUMN_FAVORITE + " DESC, " + AccountEntry.COLUMN_FULL_NAME + " ASC");
+                         null,
+                         where,
+                         whereArgs,
+                         null,
+                         null,
+                         AccountEntry.COLUMN_FAVORITE + " DESC, " + AccountEntry.COLUMN_FULL_NAME + " ASC");
     }
 
     /**

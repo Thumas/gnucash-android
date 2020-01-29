@@ -6,7 +6,10 @@ import android.app.DialogFragment;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.database.Cursor;
+import android.database.DataSetObserver;
 import android.os.Bundle;
+import android.support.v4.widget.CursorAdapter;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,16 +17,23 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
+import android.widget.FilterQueryProvider;
+import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SearchView;
 
 import org.gnucash.android.R;
+import org.gnucash.android.db.DatabaseSchema;
+import org.gnucash.android.db.adapter.AccountsDbAdapter;
+import org.gnucash.android.util.QualifiedAccountNameCursorAdapter;
 
 import java.io.Serializable;
 import java.util.List;
 
-public class SearchableListDialog
+/**
+ * Pop-up that display a ListView with a search text field
+ */
+public class SearchableListDialogFragment
         extends DialogFragment
         implements SearchView.OnQueryTextListener,
                    SearchView.OnCloseListener {
@@ -53,6 +63,9 @@ public class SearchableListDialog
     // Dialog Title
     private String _strTitle;
 
+    // Parent View
+    private AdapterView _parentAdapterView;
+
     // Search Edit text zone
     private SearchView _searchTextEditView;
 
@@ -61,9 +74,6 @@ public class SearchableListDialog
 
     // Bottom right button to close the pop-up
     private String _strPositiveButtonText;
-
-
-    private ArrayAdapter withContaingTextArrayFilterArrayAdapter;
 
     private OnSearchTextChangedListener _onSearchTextChangedListener;
 
@@ -75,7 +85,7 @@ public class SearchableListDialog
     /**
      * Constructor
      */
-    public SearchableListDialog() {
+    public SearchableListDialogFragment() {
 
     }
 
@@ -86,18 +96,20 @@ public class SearchableListDialog
      *
      * @return
      */
-    public static SearchableListDialog newInstance(List items) {
+    public static SearchableListDialogFragment makeInstance(AdapterView parentAdapterView, List items) {
 
-        SearchableListDialog searchableListDialog = new SearchableListDialog();
+        SearchableListDialogFragment searchableListDialogFragment = new SearchableListDialogFragment();
+
+        searchableListDialogFragment.setParentAdapterView(parentAdapterView);
 
         Bundle args = new Bundle();
 
         args.putSerializable(ITEMS,
                              (Serializable) items);
 
-        searchableListDialog.setArguments(args);
+        searchableListDialogFragment.setArguments(args);
 
-        return searchableListDialog;
+        return searchableListDialogFragment;
     }
 
     @Override
@@ -209,15 +221,16 @@ public class SearchableListDialog
 
         List items = (List) getArguments().getSerializable(ITEMS);
 
-        // Create an ArrayAdapter for items, with filtering capablity based on item containing a text
-        withContaingTextArrayFilterArrayAdapter = new WithContaingTextArrayFilterArrayAdapter(getActivity(),
-                                                                                              android.R.layout.simple_list_item_1,
-                                                                                              items);
         // Attach the adapter to the list
-        _listView.setAdapter(withContaingTextArrayFilterArrayAdapter);
+        _listView.setAdapter((ListAdapter) getParentAdapterView().getAdapter());
 
-        _listView.setTextFilterEnabled(true);
+//        // Enable filtering based on search text field
+//        _listView.setTextFilterEnabled(false);
 
+        // Simulate an empty search text field to build the full accounts list
+        onQueryTextChange(null);
+
+        // On item click listener
         _listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
@@ -226,7 +239,10 @@ public class SearchableListDialog
                                     int position,
                                     long id) {
 
-                final Object accountFullName = withContaingTextArrayFilterArrayAdapter.getItem(position);
+                // TODO TW C 2020-01-29 : A améliorer pour fonctionner aussi avec un ArrayAdapter
+                final CursorAdapter cursorAdapter   = (CursorAdapter) getParentAdapterView().getAdapter();
+                final Cursor        cursor          = (Cursor) cursorAdapter.getItem(position);
+                final String        accountFullName = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseSchema.AccountEntry.COLUMN_FULL_NAME));
 
                 // Call Listener
                 _onSearchableItemClickedListener.onSearchableItemClicked(accountFullName,
@@ -303,22 +319,88 @@ public class SearchableListDialog
         // Filter item list
         //
 
+        final QualifiedAccountNameCursorAdapter listViewCursorAdapter = (QualifiedAccountNameCursorAdapter) _listView.getAdapter();
+
+        //
+        // Set a filter that rebuild Cursor by running a new query based on a LIKE criteria
+        //
+
+        // TODO TW C 2020-01-29 : A améliorer pour fonctionner aussi avec un ArrayAdapter
+        listViewCursorAdapter.setFilterQueryProvider(new FilterQueryProvider() {
+
+            public Cursor runQuery(CharSequence constraint) {
+
+                final AccountsDbAdapter accountsDbAdapter = AccountsDbAdapter.getInstance();
+
+                final Cursor accountsCursor = accountsDbAdapter.fetchAccountsOrderedByFavoriteAndFullName("("
+                                                                                                          + DatabaseSchema.AccountEntry.COLUMN_FULL_NAME
+                                                                                                          + " LIKE ?"
+                                                                                                          + " AND "
+                                                                                                          + DatabaseSchema.AccountEntry.COLUMN_PLACEHOLDER
+                                                                                                          + " = 0"
+                                                                                                          + ")",
+                                                                                                          new String[]{"%"
+                                                                                                                       + ((constraint
+                                                                                                                           != null)
+                                                                                                                          ? constraint.toString()
+                                                                                                                          : "")
+                                                                                                                       + "%"});
+                return accountsCursor;
+            }
+        });
+
+        //
+        // Register a Listener to close dialog if there is only one item remaining in the filtered list, and select it
+        // automatically
+        //
+
+        listViewCursorAdapter.registerDataSetObserver(new DataSetObserver() {
+            @Override
+            public void onChanged() {
+
+                super.onChanged();
+
+                final Cursor accountsCursor = listViewCursorAdapter.getCursor();
+
+                if (accountsCursor.getCount() == 1) {
+                    // only one account
+
+                    accountsCursor.moveToFirst();
+
+                    // Simulate a onSearchableItemClicked
+                    _onSearchableItemClickedListener.onSearchableItemClicked(accountsCursor.getString(accountsCursor.getColumnIndex(DatabaseSchema.AccountEntry.COLUMN_FULL_NAME)),
+                                                                             1);
+                    getDialog().dismiss();
+
+                } else {
+                    // only one account n' pas
+
+                    // RAF
+                }
+
+            }
+        });
+
+        //
+        // Start filtering thread
+        //
+
         if (TextUtils.isEmpty(s)) {
 
-            ((WithContaingTextArrayFilterArrayAdapter) _listView.getAdapter()).getFilter()
-                                                                              .filter(null);
+            listViewCursorAdapter.getFilter()
+                                 .filter(null);
 
         } else {
 
-            ((WithContaingTextArrayFilterArrayAdapter) _listView.getAdapter()).getFilter()
-                                                                              .filter(s);
+            listViewCursorAdapter.getFilter()
+                                 .filter(s);
         }
 
         //
         // Call Search Text Change Listener
         //
 
-        if (null != _onSearchTextChangedListener) {
+        if (_onSearchTextChangedListener != null) {
 
             // Call Listener
             _onSearchTextChangedListener.onSearchTextChanged(s);
@@ -350,4 +432,13 @@ public class SearchableListDialog
                            200);
     }
 
+    public AdapterView getParentAdapterView() {
+
+        return _parentAdapterView;
+    }
+
+    public void setParentAdapterView(AdapterView parentAdapterView) {
+
+        _parentAdapterView = parentAdapterView;
+    }
 }
