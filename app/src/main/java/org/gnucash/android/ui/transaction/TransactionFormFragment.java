@@ -81,7 +81,9 @@ import org.gnucash.android.ui.util.RecurrenceParser;
 import org.gnucash.android.ui.util.RecurrenceViewClickListener;
 import org.gnucash.android.ui.util.widget.CalculatorEditText;
 import org.gnucash.android.ui.util.widget.TransactionTypeSwitch;
+import org.gnucash.android.ui.util.widget.searchablespinner.SearchableListDialogFragment;
 import org.gnucash.android.ui.util.widget.searchablespinner.SearchableSpinnerView;
+import org.gnucash.android.util.KeyboardUtils;
 import org.gnucash.android.util.QualifiedAccountNameCursorAdapter;
 
 import java.math.BigDecimal;
@@ -95,6 +97,8 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+
+import static org.gnucash.android.util.QualifiedAccountNameCursorAdapter.removeFavoriteIconFromSelectedView;
 
 /**
  * Fragment for creating or editing transactions
@@ -252,19 +256,28 @@ public class TransactionFormFragment extends Fragment implements
 	 * Create the view and retrieve references to the UI elements
 	 */
 	@Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-			Bundle savedInstanceState) {
-		View v = inflater.inflate(R.layout.fragment_transaction_form, container, false);
-        ButterKnife.bind(this, v);
+    public View onCreateView(LayoutInflater inflater,
+                             ViewGroup container,
+                             Bundle savedInstanceState) {
+
+        View v = inflater.inflate(R.layout.fragment_transaction_form,
+                                  container,
+                                  false);
+
+        ButterKnife.bind(this,
+                         v);
+
         mAmountEditText.bindListeners(mKeyboardView);
+
         mOpenSplitEditor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 openSplitEditor();
             }
         });
         return v;
-	}
+    }
 
     /**
      * Starts the transfer of funds from one currency to another
@@ -354,13 +367,6 @@ public class TransactionFormFragment extends Fragment implements
                 startTransferFunds();
             }
 
-            // Removes the icon from view to avoid visual clutter
-            private void removeFavoriteIconFromSelectedView(TextView view) {
-                if (view != null) {
-                    view.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-                }
-            }
-
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
                 //nothing to see here, move along
@@ -378,11 +384,18 @@ public class TransactionFormFragment extends Fragment implements
             actionBar.setTitle(R.string.title_add_transaction);
             initalizeViews();
             initTransactionNameAutocomplete();
+
         } else {
             actionBar.setTitle(R.string.title_edit_transaction);
-			initializeViewsWithTransaction();
+            initializeViewsWithTransaction();
             mEditMode = true;
-		}
+        }
+
+        // Set Focus onto Amount at first
+//            mDescriptionEditText.clearFocus();
+        KeyboardUtils.hideKeyboard(mDescriptionEditText,
+                                   200);
+        mAmountEditText.requestFocus();
 
         getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 	}
@@ -609,7 +622,10 @@ public class TransactionFormFragment extends Fragment implements
                                                                                             AccountType.ROOT.name()});
 
         mAccountCursorAdapter = new QualifiedAccountNameCursorAdapter(getActivity(),
-                                                                      mCursor);
+                                                                      mCursor,
+//                                                                      R.layout.account_spinner_dropdown_item);
+//                                                                      android.R.layout.simple_spinner_item);
+                                                                      R.layout.account_spinner_dropdown_item);
 
         mTransferAccountSearchableSpinnerView.setAdapter(mAccountCursorAdapter);
 	}

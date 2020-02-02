@@ -37,6 +37,61 @@ import org.gnucash.android.db.adapter.AccountsDbAdapter;
 public class QualifiedAccountNameCursorAdapter
         extends SimpleCursorAdapter {
 
+    //
+    private int _spinnerSelectedItemLayout;
+    private int _spinnerDropDownItemLayout;
+
+    /**
+     * Overloaded constructor. Specifies the view to use for displaying selected spinner text
+     *
+     * @param context
+     *         Application context
+     * @param cursor
+     *         Cursor to account data
+     * @param spinnerSelectedItemLayout
+     *         Layout resource for selected item text
+     */
+    public QualifiedAccountNameCursorAdapter(Context context,
+                                             Cursor cursor,
+                                             @LayoutRes int spinnerSelectedItemLayout,
+                                             @LayoutRes int spinnerDropDownItemLayout
+                                            ) {
+
+        super(context,
+              spinnerSelectedItemLayout,  // Layout of the closed spinner item
+              cursor,
+              new String[]{DatabaseSchema.AccountEntry.COLUMN_FULL_NAME},
+              new int[]{android.R.id.text1},
+              0);
+
+        // Store layout of each item in the open drop down of the spinner
+        setSpinnerSelectedItemLayout(spinnerSelectedItemLayout);
+
+        // Store layout of each item in the open drop down of the spinner
+        setSpinnerDropDownItemLayout(spinnerDropDownItemLayout);
+    }
+
+    /**
+     * Overloaded constructor. Specifies the view to use for displaying selected spinner text
+     *
+     * @param context
+     *         Application context
+     * @param cursor
+     *         Cursor to account data
+     * @param selectedSpinnerItemLayout
+     *         Layout resource for selected item text
+     */
+    public QualifiedAccountNameCursorAdapter(Context context,
+                                             Cursor cursor,
+                                             @LayoutRes int selectedSpinnerItemLayout) {
+
+        this(context,
+             cursor,
+             selectedSpinnerItemLayout,  // Layout of the closed spinner item
+             R.layout.account_spinner_dropdown_item
+            );
+    }
+
     /**
      * Initialize the Cursor adapter for account names using default spinner views
      *
@@ -52,41 +107,6 @@ public class QualifiedAccountNameCursorAdapter
              cursor,
              android.R.layout.simple_spinner_item  // Layout of the closed spinner item
             );
-
-//        super(context,
-//              android.R.layout.simple_spinner_item, // Layout of the closed spinner item
-//              cursor,
-//              new String[]{DatabaseSchema.AccountEntry.COLUMN_FULL_NAME},
-//              new int[]{android.R.id.text1},
-//              0);
-//
-//        // Define layout of each item in the open drop down of the spinner
-//        setDropDownViewResource(R.layout.account_spinner_dropdown_item);
-    }
-
-    /**
-     * Overloaded constructor. Specifies the view to use for displaying selected spinner text
-     *
-     * @param context
-     *         Application context
-     * @param cursor
-     *         Cursor to account data
-     * @param selectedSpinnerItem
-     *         Layout resource for selected item text
-     */
-    public QualifiedAccountNameCursorAdapter(Context context,
-                                             Cursor cursor,
-                                             @LayoutRes int selectedSpinnerItem) {
-
-        super(context,
-              selectedSpinnerItem,  // Layout of the closed spinner item
-              cursor,
-              new String[]{DatabaseSchema.AccountEntry.COLUMN_FULL_NAME},
-              new int[]{android.R.id.text1},
-              0);
-
-        // Define layout of each item in the open drop down of the spinner
-        setDropDownViewResource(R.layout.account_spinner_dropdown_item);
     }
 
     @Override
@@ -98,21 +118,52 @@ public class QualifiedAccountNameCursorAdapter
                        context,
                        cursor);
 
-        // item text
-        TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+        //
+        // Add or not Favorite Star Icon
+        //
 
         Integer isFavorite = cursor.getInt(cursor.getColumnIndex(DatabaseSchema.AccountEntry.COLUMN_FAVORITE));
 
+        displayFavoriteAccountStarIcon(view,
+                                       isFavorite);
+
+    }
+
+    /**
+     * @param view
+     * @param isFavorite
+     */
+    public static void displayFavoriteAccountStarIcon(View view,
+                                                  Integer isFavorite) {
+
+        // item text
+        TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+
         if (isFavorite == 0) {
-            text1.setCompoundDrawablesWithIntrinsicBounds(0,
-                                                             0,
-                                                             0,
-                                                             0);
+
+            removeFavoriteIconFromSelectedView(text1);
+//            text1.setCompoundDrawablesWithIntrinsicBounds(0,
+//                                                             0,
+//                                                             0,
+//                                                             0);
         } else {
             text1.setCompoundDrawablesWithIntrinsicBounds(0,
                                                              0,
                                                              R.drawable.ic_star_black_18dp,
                                                              0);
+        }
+    }
+
+    /**
+     * Removes the icon from view to avoid visual clutter
+     *
+     * @param textView
+     */
+    public static void removeFavoriteIconFromSelectedView(TextView textView) {
+
+        if (textView != null) {
+
+            textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
         }
     }
 
@@ -138,4 +189,27 @@ public class QualifiedAccountNameCursorAdapter
         
         return -1;
     }
+
+    public int getSpinnerSelectedItemLayout() {
+
+        return _spinnerSelectedItemLayout;
+    }
+
+    public void setSpinnerSelectedItemLayout(int spinnerSelectedItemLayout) {
+
+        _spinnerSelectedItemLayout = spinnerSelectedItemLayout;
+    }
+
+    public int getSpinnerDropDownItemLayout() {
+
+        return _spinnerDropDownItemLayout;
+    }
+
+    public void setSpinnerDropDownItemLayout(int spinnerDropDownItemLayout) {
+
+        _spinnerDropDownItemLayout = spinnerDropDownItemLayout;
+
+        setDropDownViewResource(getSpinnerDropDownItemLayout());
+    }
+
 }

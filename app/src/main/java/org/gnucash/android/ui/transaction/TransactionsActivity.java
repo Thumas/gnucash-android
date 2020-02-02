@@ -18,8 +18,10 @@
 package org.gnucash.android.ui.transaction;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -40,7 +42,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 
@@ -59,6 +60,7 @@ import org.gnucash.android.ui.common.FormActivity;
 import org.gnucash.android.ui.common.Refreshable;
 import org.gnucash.android.ui.common.UxArgument;
 import org.gnucash.android.ui.util.AccountBalanceTask;
+import org.gnucash.android.ui.util.widget.searchablespinner.SearchableSpinnerView;
 import org.gnucash.android.util.QualifiedAccountNameCursorAdapter;
 import org.joda.time.LocalDate;
 
@@ -67,6 +69,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import butterknife.BindView;
+
+import static org.gnucash.android.util.QualifiedAccountNameCursorAdapter.removeFavoriteIconFromSelectedView;
 
 /**
  * Activity for displaying, creating and editing transactions
@@ -111,16 +115,17 @@ public class TransactionsActivity extends BaseDrawerActivity implements
      */
     private Cursor mAccountsCursor = null;
 
-    @BindView(R.id.pager)            ViewPager mViewPager;
-    @BindView(R.id.toolbar_spinner)  Spinner mToolbarSpinner;
-    @BindView(R.id.tab_layout)       TabLayout mTabLayout;
-    @BindView(R.id.transactions_sum) TextView mSumTextView;
-    @BindView(R.id.fab_create_transaction) FloatingActionButton mCreateFloatingButton;
+    @BindView(R.id.pager)                 ViewPager             mViewPager;
+    @BindView(R.id.toolbar_spinner)
+    SearchableSpinnerView mToolbarSpinner;
+    @BindView(R.id.tab_layout)            TabLayout             mTabLayout;
+    @BindView(R.id.transactions_sum)      TextView              mSumTextView;
+    @BindView(R.id.fab_create_transaction)FloatingActionButton  mCreateFloatingButton;
 
     private SparseArray<Refreshable> mFragmentPageReferenceMap = new SparseArray<>();
 
     /**
-     * Flag for determining is the currently displayed account is a placeholder account or not.
+     * Flag for determining if the currently displayed account is a placeholder account or not.
      * This will determine if the transactions tab is displayed or not
      */
     private boolean mIsPlaceholderAccount;
@@ -128,7 +133,7 @@ public class TransactionsActivity extends BaseDrawerActivity implements
 	private AdapterView.OnItemSelectedListener mTransactionListNavigationListener = new AdapterView.OnItemSelectedListener() {
 
         @Override
-        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        public void onItemSelected(AdapterView<?> parent, View selectedItemView, int position, long id) {
             mAccountUID = mAccountsDbAdapter.getUID(id);
             getIntent().putExtra(UxArgument.SELECTED_ACCOUNT_UID, mAccountUID); //update the intent in case the account gets rotated
             mIsPlaceholderAccount = mAccountsDbAdapter.isPlaceholderAccount(mAccountUID);
@@ -143,10 +148,13 @@ public class TransactionsActivity extends BaseDrawerActivity implements
                     mTabLayout.addTab(mTabLayout.newTab().setText(R.string.section_header_transactions));
                 }
             }
-            if (view != null) {
-                // Hide the favorite icon of the selected account to avoid clutter
-                ((TextView) view).setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            }
+
+            removeFavoriteIconFromSelectedView((TextView) selectedItemView);
+//            if (view != null) {
+//                // Hide the favorite icon of the selected account to avoid clutter
+//                ((TextView) view).setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+//            }
+
             //refresh any fragments in the tab with the new account UID
             refresh();
         }
@@ -156,6 +164,25 @@ public class TransactionsActivity extends BaseDrawerActivity implements
             //nothing to see here, move along
         }
 	};
+
+    private DialogInterface.OnCancelListener mOnCancelListener = new DialogInterface.OnCancelListener() {
+
+        @Override
+        public void onCancel(DialogInterface dialog) {
+
+            resetSpinnerItemAppearance();
+        }
+    };
+
+    private DialogInterface.OnClickListener mOnClickListener = new DialogInterface.OnClickListener() {
+
+        @Override
+        public void onClick(DialogInterface dialog,
+                            int which) {
+
+            resetSpinnerItemAppearance();
+        }
+    };
 
     private PagerAdapter mPagerAdapter;
 
@@ -247,6 +274,18 @@ public class TransactionsActivity extends BaseDrawerActivity implements
             return transactionsListFragment;
         }
     }
+
+    protected void resetSpinnerItemAppearance() {
+
+        // item text
+        TextView text1 = (TextView) mToolbarSpinner.findViewById(android.R.id.text1);
+
+        // TODO TW C 2020-02-02 : Il faudrait récupérer la couleur du Thème
+        text1.setTextColor(Color.WHITE);
+
+        removeFavoriteIconFromSelectedView((TextView) text1);
+    }
+
 
     /**
      * Refreshes the fragments currently in the transactions activity
@@ -378,14 +417,23 @@ public class TransactionsActivity extends BaseDrawerActivity implements
         if (mAccountsCursor != null) {
             mAccountsCursor.close();
         }
-		mAccountsCursor = mAccountsDbAdapter.fetchAllRecordsOrderedByFullName();
+//        mAccountsCursor = mAccountsDbAdapter.fetchAllRecordsOrderedByFullName();
+        mAccountsCursor = mAccountsDbAdapter.fetchAccountsOrderedByFavoriteAndFullName(null,null);
 
         SpinnerAdapter qualifiedAccountNameCursorAdapter = new QualifiedAccountNameCursorAdapter(getSupportActionBar().getThemedContext(),
                                                                                                  mAccountsCursor,
                                                                                                  R.layout.transaction_account_spinner_item);
 
         mToolbarSpinner.setAdapter(qualifiedAccountNameCursorAdapter);
+
         mToolbarSpinner.setOnItemSelectedListener(mTransactionListNavigationListener);
+
+        mToolbarSpinner.setOnCancelListener(mOnCancelListener);
+
+        // The "positive" button act as a Cancel button
+        mToolbarSpinner.setPositiveButton(getString(R.string.alert_dialog_cancel),
+                                          mOnClickListener);
+
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
 		updateNavigationSelection();
@@ -395,12 +443,18 @@ public class TransactionsActivity extends BaseDrawerActivity implements
 	 * Updates the action bar navigation list selection to that of the current account
 	 * whose transactions are being displayed/manipulated
 	 */
-	public void updateNavigationSelection() {
-		// set the selected item in the spinner
-		int i = 0;
-		Cursor accountsCursor = mAccountsDbAdapter.fetchAllRecordsOrderedByFullName();
+    public void updateNavigationSelection() {
+        // set the selected item in the spinner
+        int i = 0;
+
+//        Cursor accountsCursor = mAccountsDbAdapter.fetchAllRecordsOrderedByFullName();
+        Cursor accountsCursor = mAccountsDbAdapter.fetchAccountsOrderedByFavoriteAndFullName(null,
+                                                                                             null);
+
         while (accountsCursor.moveToNext()) {
+
             String uid = accountsCursor.getString(accountsCursor.getColumnIndexOrThrow(DatabaseSchema.AccountEntry.COLUMN_UID));
+
             if (mAccountUID.equals(uid)) {
                 mToolbarSpinner.setSelection(i);
                 break;
@@ -408,7 +462,7 @@ public class TransactionsActivity extends BaseDrawerActivity implements
             ++i;
         }
         accountsCursor.close();
-	}
+    }
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
