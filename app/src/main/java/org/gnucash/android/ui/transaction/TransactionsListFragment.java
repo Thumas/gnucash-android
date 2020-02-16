@@ -164,8 +164,13 @@ public class TransactionsListFragment extends Fragment implements
 	
 	@Override
 	public void onResume() {
+
 		super.onResume();
+
+		// Select Current Account in Toolbar
 		((TransactionsActivity)getActivity()).selectCurrentAccountInToolbarSpinner();
+
+		// Refresh Transaction List according to currently selected Account in Toolbar Spinner
 		refresh();
 	}
 
@@ -312,6 +317,11 @@ public class TransactionsListFragment extends Fragment implements
 					for (Split split : splits) {
 						if (!split.getAccountUID().equals(mAccountUID)) {
 							text = AccountsDbAdapter.getInstance().getFullyQualifiedAccountName(split.getAccountUID());
+
+							// Set color according to Account
+							TransactionFormFragment.setAccountTextColor(holder.secondaryText,
+																		split.getAccountUID());
+
 							break;
 						}
 					}
@@ -321,6 +331,7 @@ public class TransactionsListFragment extends Fragment implements
 					text = splits.size() + " splits";
 				}
 				holder.secondaryText.setText(text);
+
 				holder.transactionDate.setText(dateText);
 
                 //

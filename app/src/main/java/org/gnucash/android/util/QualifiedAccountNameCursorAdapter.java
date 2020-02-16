@@ -22,11 +22,13 @@ import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.view.View;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import org.gnucash.android.R;
 import org.gnucash.android.db.DatabaseSchema;
 import org.gnucash.android.db.adapter.AccountsDbAdapter;
+import org.gnucash.android.ui.transaction.TransactionFormFragment;
 
 /**
  * Cursor adapter which looks up the fully qualified account name and returns that instead of just the simple name.
@@ -123,6 +125,55 @@ public class QualifiedAccountNameCursorAdapter
                        cursor);
 
         //
+        // Set Account Color
+        //
+
+        String accountUID = cursor.getString(cursor.getColumnIndex(DatabaseSchema.AccountEntry.COLUMN_UID));
+
+        TextView simpleAccountNameTextView = (TextView) view.findViewById(R.id.text2);
+
+        TransactionFormFragment.setAccountTextColor(simpleAccountNameTextView,
+                                                    accountUID);
+
+        //
+        // Put Parent Account Full Name in text3
+        //
+
+        TextView parentAccountFullNameTextView = (TextView) view.findViewById(R.id.text3);
+
+        if (parentAccountFullNameTextView != null) {
+            //
+
+            // TODO TW C 2020-02-15 : A factoriser et commenter
+
+            String accountFullName = cursor.getString(cursor.getColumnIndex(DatabaseSchema.AccountEntry.COLUMN_FULL_NAME));
+
+            String parentAccountFullName;
+            int    index = accountFullName.lastIndexOf(AccountsDbAdapter.ACCOUNT_NAME_SEPARATOR);
+
+            if (index > 0) {
+                //
+
+                //
+                parentAccountFullName = accountFullName.substring(0,
+                                                                  index);
+
+            } else {
+                //  n' pas
+
+                parentAccountFullName="";
+            }
+
+            // Display Parent Account Full Name
+            parentAccountFullNameTextView.setText(parentAccountFullName);
+
+        } else {
+            //  n' pas
+
+            // RAF
+        }
+
+        //
         // Add or not Favorite Star Icon
         //
 
@@ -134,31 +185,30 @@ public class QualifiedAccountNameCursorAdapter
     }
 
     /**
-     * @param view
+     * @param spinnerSelectedItemView
      * @param isFavorite
      */
-    public static void displayFavoriteAccountStarIcon(View view,
+    public static void displayFavoriteAccountStarIcon(View spinnerSelectedItemView,
                                                       Integer isFavorite) {
 
-        // item text
-        TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+        TextView simpleAccountNameTextView = (TextView) spinnerSelectedItemView.findViewById(R.id.text2);
 
-        if (text1 != null) {
+        if (simpleAccountNameTextView != null) {
             //
 
             //
             if (isFavorite == 0) {
 
                 // Hide Favorite Account Star
-                hideFavoriteAccountStarIcon(text1);
+                hideFavoriteAccountStarIcon(spinnerSelectedItemView);
 
             } else {
 
                 // Display Favorite Account Star
-                text1.setCompoundDrawablesWithIntrinsicBounds(0,
-                                                              0,
-                                                              R.drawable.ic_star_black_18dp,
-                                                              0);
+                simpleAccountNameTextView.setCompoundDrawablesWithIntrinsicBounds(0,
+                                                                                  0,
+                                                                                  R.drawable.ic_star_black_18dp,
+                                                                                  0);
             }
 
         } else {
@@ -171,13 +221,15 @@ public class QualifiedAccountNameCursorAdapter
     /**
      * Removes the icon from view to avoid visual clutter
      *
-     * @param textView
+     * @param spinnerView
      */
-    public static void hideFavoriteAccountStarIcon(TextView textView) {
+    public static void hideFavoriteAccountStarIcon(View spinnerView) {
 
-        if (textView != null) {
+        TextView textViewWithStarIcon = (TextView) spinnerView.findViewById(R.id.text2);
 
-            textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+        if (textViewWithStarIcon != null) {
+
+            textViewWithStarIcon.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
         }
     }
 

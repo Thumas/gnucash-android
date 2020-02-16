@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.DataSetObserver;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.widget.CursorAdapter;
 import android.text.TextUtils;
@@ -19,10 +20,13 @@ import android.widget.FilterQueryProvider;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SearchView;
+import android.widget.TextView;
 
 import org.gnucash.android.R;
+import org.gnucash.android.app.GnuCashApplication;
 import org.gnucash.android.db.DatabaseSchema;
 import org.gnucash.android.db.adapter.AccountsDbAdapter;
+import org.gnucash.android.ui.transaction.TransactionFormFragment;
 import org.gnucash.android.util.KeyboardUtils;
 import org.gnucash.android.util.QualifiedAccountNameCursorAdapter;
 
@@ -65,7 +69,7 @@ public class SearchableListDialogFragment
     private SearchView _searchTextEditView;
 
     // Item list
-    private ListView _listView;
+    ListView _listView;
 
     // Bottom right button to close the pop-up
     private String _strPositiveButtonText;
@@ -78,8 +82,8 @@ public class SearchableListDialogFragment
 
     private DialogInterface.OnCancelListener _onCancelListener;
 
-    // Parent View
-    private SearchableSpinnerView _parentAdapterView;
+    // Parent SpinnerView
+    private SearchableSpinnerView _parentSpinnerView;
 
     private boolean mIsDismissing;
 
@@ -179,7 +183,29 @@ public class SearchableListDialogFragment
                                    : _strPositiveButtonText;
 
         alertDialogBuilder.setPositiveButton(strPositiveButton,
-                                             _onPositiveBtnClickListener);
+                                             new DialogInterface.OnClickListener() {
+
+                                                 @Override
+                                                 public void onClick(final DialogInterface dialog,
+                                                                     final int which) {
+
+                                                     // Dismiss dialog
+                                                     dismissDialog();
+
+                                                     if (_onPositiveBtnClickListener != null) {
+                                                         //
+
+                                                         // Call listener
+                                                         _onPositiveBtnClickListener.onClick(dialog,
+                                                                                             which);
+
+                                                     } else {
+                                                         //  n' pas
+
+                                                         // RAF
+                                                     }
+                                                 }
+                                             });
 
         //
         // Create searchableListDialog
@@ -234,8 +260,7 @@ public class SearchableListDialogFragment
         // because ListView use only selectedItemView for list item
         //
 
-        QualifiedAccountNameCursorAdapter parentCursorAdapter =
-                (QualifiedAccountNameCursorAdapter) getParentAdapterView().getAdapter();
+        QualifiedAccountNameCursorAdapter parentCursorAdapter = (QualifiedAccountNameCursorAdapter) getParentSpinnerView().getAdapter();
 
         parentCursorAdapter.setViewResource(parentCursorAdapter.getSpinnerDropDownItemLayout());
 
@@ -253,7 +278,7 @@ public class SearchableListDialogFragment
                 //
 
                 // Convert WhereArgs into List
-                final String[] cursorWhereArgs = getParentAdapterView().getCursorWhereArgs();
+                final String[] cursorWhereArgs = getParentSpinnerView().getCursorWhereArgs();
                 final List<String> whereArgsAsList = (cursorWhereArgs != null)
                                                      ? new ArrayList<String>(Arrays.asList(cursorWhereArgs))
                                                      : new ArrayList<String>();
@@ -273,7 +298,7 @@ public class SearchableListDialogFragment
 
                 final AccountsDbAdapter accountsDbAdapter = AccountsDbAdapter.getInstance();
 
-                final String where = getParentAdapterView().getCursorWhere()
+                final String where = getParentSpinnerView().getCursorWhere()
                                      + " AND "
                                      + DatabaseSchema.AccountEntry.COLUMN_FULL_NAME
                                      + " LIKE ?";
@@ -334,10 +359,10 @@ public class SearchableListDialogFragment
                 final Cursor        cursor              = (Cursor) parentCursorAdapter.getItem(position);
                 final String        accountUID          = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseSchema.AccountEntry.COLUMN_UID));
 
+                dismissDialog();
+
                 // Call Listener
                 _onSearchableItemClickedListener.onSearchableItemClicked(accountUID);
-
-                dismissDialog();
             }
         });
 
@@ -404,7 +429,7 @@ public class SearchableListDialogFragment
     protected void dismissDialog() {
 
         if (!mIsDismissing) {
-            //
+            // It is the first time dismissing has been requested
 
             // Avoid infinite looping
             mIsDismissing = true;
@@ -413,7 +438,7 @@ public class SearchableListDialogFragment
             // Restore original Spinner Selected Item Layout
             //
 
-            QualifiedAccountNameCursorAdapter parentCursorAdapter = (QualifiedAccountNameCursorAdapter) getParentAdapterView().getAdapter();
+            QualifiedAccountNameCursorAdapter parentCursorAdapter = (QualifiedAccountNameCursorAdapter) getParentSpinnerView().getAdapter();
 
             parentCursorAdapter.setViewResource(parentCursorAdapter.getSpinnerSelectedItemLayout());
 
@@ -433,7 +458,7 @@ public class SearchableListDialogFragment
             getDialog().dismiss();
 
         } else {
-            //  n' pas
+            // dismissing has already been requested
 
             // RAF
         }
@@ -457,15 +482,13 @@ public class SearchableListDialogFragment
         _strTitle = strTitle;
     }
 
-    public void setPositiveButton(String strPositiveButtonText) {
+    public void setPositiveButtonText(String strPositiveButtonText) {
 
         _strPositiveButtonText = strPositiveButtonText;
     }
 
-    public void setPositiveButton(String strPositiveButtonText,
-                                  DialogInterface.OnClickListener onClickListener) {
+    public void setPositiveButtonClickListener(DialogInterface.OnClickListener onClickListener) {
 
-        _strPositiveButtonText = strPositiveButtonText;
         _onPositiveBtnClickListener = onClickListener;
     }
 
@@ -517,14 +540,13 @@ public class SearchableListDialogFragment
         dismiss();
     }
 
-    // TODO TW C 2020-02-13 : A renommer
-    public SearchableSpinnerView getParentAdapterView() {
+    public SearchableSpinnerView getParentSpinnerView() {
 
-        return _parentAdapterView;
+        return _parentSpinnerView;
     }
 
     public void setParentAdapterView(SearchableSpinnerView parentAdapterView) {
 
-        _parentAdapterView = parentAdapterView;
+        _parentSpinnerView = parentAdapterView;
     }
 }

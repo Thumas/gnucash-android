@@ -18,6 +18,7 @@ package org.gnucash.android.ui.transaction;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
@@ -97,6 +98,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import static org.gnucash.android.R.id.secondary_text;
 import static org.gnucash.android.util.QualifiedAccountNameCursorAdapter.hideFavoriteAccountStarIcon;
 
 /**
@@ -334,8 +336,35 @@ public class TransactionFormFragment extends Fragment implements
 
         setListeners();
 
+        //
+        // mTransferAccountSearchableSpinnerView
+        //
+
         //updateTransferAccountsList must only be called after initializing mAccountsDbAdapter
         updateTransferAccountsList();
+
+        mTransferAccountSearchableSpinnerView.setTitle(getString(R.string.select_account));
+
+        mTransferAccountSearchableSpinnerView.setPositiveButton(getString(R.string.alert_dialog_cancel),
+                                                                new DialogInterface.OnClickListener() {
+
+                                                                    @Override
+                                                                    public void onClick(final DialogInterface dialog,
+                                                                                        final int which) {
+
+                                                                        // TODO TW C 2020-02-16 : A faire fonctionner
+//                                                                        final View spinnerSelectedItemView = mTransferAccountSearchableSpinnerView.getSelectedView();
+//
+//                                                                        TextView accountFullNameTextView = (TextView) spinnerSelectedItemView.findViewById(android.R.id.text1);
+//
+//                                                                        setAccountTextColor(accountFullNameTextView,
+//                                                                                            // TODO TW C 2020-02-16 : A
+//                                                                                            //  corriger pour mettre le split
+//                                                                                            //  account
+//                                                                                            mAccountUID);
+
+                                                                    }
+                                                                });
 
         mTransferAccountSearchableSpinnerView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             /**
@@ -345,17 +374,32 @@ public class TransactionFormFragment extends Fragment implements
             boolean userInteraction = false;
 
             @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+            public void onItemSelected(AdapterView<?> adapterView,
+                                       View spinnerSelectedItemView,
+                                       int position,
+                                       long id) {
 
-                TextView text1 = (TextView) view.findViewById(android.R.id.text1);
-                hideFavoriteAccountStarIcon(text1 );
+                hideFavoriteAccountStarIcon(spinnerSelectedItemView);
 
                 if (mSplitsList.size() == 2) {
                     //when handling simple transfer to one account
 
                     for (Split split : mSplitsList) {
+
                         if (!split.getAccountUID().equals(mAccountUID)) {
-                            split.setAccountUID(mAccountsDbAdapter.getUID(id));
+
+                            final String accountUID = mAccountsDbAdapter.getUID(id);
+
+                            split.setAccountUID(accountUID);
+
+                            //
+                            // Set Account Color
+                            //
+
+                            TextView accountFullNameTextView = (TextView) spinnerSelectedItemView.findViewById(android.R.id.text1);
+
+                            setAccountTextColor(accountFullNameTextView,
+                                                accountUID);
                         }
                         // else case is handled when saving the transactions
                     }
@@ -375,8 +419,8 @@ public class TransactionFormFragment extends Fragment implements
             }
         });
 
-        mTransferAccountSearchableSpinnerView.setTitle(getString(R.string.select_account));
-        mTransferAccountSearchableSpinnerView.setPositiveButton(getString(R.string.alert_dialog_cancel));
+        mTransferAccountSearchableSpinnerView.setOnCancelListener(mOnCancelListener);
+
 
         ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
         assert actionBar != null;
@@ -402,6 +446,69 @@ public class TransactionFormFragment extends Fragment implements
         getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 	}
 
+    private DialogInterface.OnCancelListener mOnCancelListener = new DialogInterface.OnCancelListener() {
+
+        @Override
+        public void onCancel(DialogInterface dialog) {
+
+            resetSpinnerItemAppearance(dialog);
+        }
+    };
+
+    private void resetSpinnerItemAppearance(DialogInterface dialog) {
+
+        // TODO TW C 2020-02-15 : A finir
+//        SearchableListDialogFragment searchableListDialogFragment = (SearchableListDialogFragment) dialog;
+//
+//        String accountFullName = (String) searchableListDialogFragment.getParentSpinnerView()
+//                                                                      .getSelectedItem();
+//
+//        //
+//        // Set Account Color
+//        //
+//
+//        TextView accountFullNameTextView = (TextView) searchableListDialogFragment.getParentSpinnerView()
+//                                                                                  .findViewById(android.R.id.text1);
+//
+//        if (accountFullNameTextView != null) {
+//            //
+//
+//            // Get Account color
+////                int iColor = AccountsDbAdapter.getActiveAccountColorResource(accountUID);
+//            int iColor = Color.RED;
+//
+//            // Override color
+//            accountFullNameTextView.setTextColor(iColor);
+//
+//        } else {
+//            //  n' pas
+//
+//            // RAF
+//        }
+
+    }
+
+
+    // TODO TW C 2020-02-15 : Améliorer commentaires et déplacer
+    public static void setAccountTextColor(final TextView accountTextView,
+                                           final String accountUID) {
+
+        if (accountTextView != null) {
+            //
+
+            // Get Account color
+            int iColor = AccountsDbAdapter.getActiveAccountColorResource(accountUID);
+
+            // Override color
+            accountTextView.setTextColor(iColor);
+
+        } else {
+            //  n' pas
+
+            // RAF
+        }
+    }
+
     /**
      * Extension of SimpleCursorAdapter which is used to populate the fields for the list items
      * in the transactions suggestions (auto-complete transaction description).
@@ -413,16 +520,28 @@ public class TransactionFormFragment extends Fragment implements
         }
 
         @Override
-        public void bindView(View view, Context context, Cursor cursor) {
-            super.bindView(view, context, cursor);
+        public void bindView(View view,
+                             Context context,
+                             Cursor cursor) {
+
+            super.bindView(view,
+                           context,
+                           cursor);
+
             String transactionUID = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseSchema.TransactionEntry.COLUMN_UID));
-            Money balance = TransactionsDbAdapter.getInstance().getBalance(transactionUID, mAccountUID);
+
+            Money  balance        = TransactionsDbAdapter.getInstance()
+                                                         .getBalance(transactionUID,
+                                                                     mAccountUID);
 
             long timestamp = cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseSchema.TransactionEntry.COLUMN_TIMESTAMP));
-            String dateString = DateUtils.formatDateTime(getActivity(), timestamp,
-                    DateUtils.FORMAT_SHOW_WEEKDAY | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_YEAR);
+            String dateString = DateUtils.formatDateTime(getActivity(),
+                                                         timestamp,
+                                                         DateUtils.FORMAT_SHOW_WEEKDAY
+                                                         | DateUtils.FORMAT_SHOW_DATE
+                                                         | DateUtils.FORMAT_SHOW_YEAR);
 
-            TextView secondaryTextView = (TextView) view.findViewById(R.id.secondary_text);
+            TextView secondaryTextView = (TextView) view.findViewById(secondary_text);
             secondaryTextView.setText(balance.formattedString() + " on " + dateString); //TODO: Extract string
         }
     }
@@ -729,10 +848,13 @@ public class TransactionFormFragment extends Fragment implements
      * @param accountId Database ID of the transfer account
      */
 	private void setSelectedTransferAccount(long accountId){
-        int position = mAccountCursorAdapter.getPosition(mAccountsDbAdapter.getUID(accountId));
+
+        final String accountUID = mAccountsDbAdapter.getUID(accountId);
+
+        int position = mAccountCursorAdapter.getPosition(accountUID);
         if (position >= 0)
             mTransferAccountSearchableSpinnerView.setSelection(position);
-	}
+    }
 
     /**
      * Returns a list of splits based on the input in the transaction form.
