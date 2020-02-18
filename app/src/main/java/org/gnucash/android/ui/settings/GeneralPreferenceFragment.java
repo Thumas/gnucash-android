@@ -57,6 +57,7 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat implemen
 
     @Override
     public void onCreatePreferences(Bundle bundle, String s) {
+
         addPreferencesFromResource(R.xml.fragment_general_preferences);
     }
 
@@ -107,27 +108,11 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat implemen
     }
 
     @Override
-    public boolean onPreferenceChange(Preference preference, Object newValue) {
-        if (preference.getKey().equals(getString(R.string.key_enable_passcode))) {
-            if ((Boolean) newValue) {
-                startActivityForResult(new Intent(getActivity(), PasscodePreferenceActivity.class),
-                        GeneralPreferenceFragment.PASSCODE_REQUEST_CODE);
-            } else {
-                Intent passIntent = new Intent(getActivity(), PasscodeLockScreenActivity.class);
-                passIntent.putExtra(UxArgument.DISABLE_PASSCODE, UxArgument.DISABLE_PASSCODE);
-                startActivityForResult(passIntent, GeneralPreferenceFragment.REQUEST_DISABLE_PASSCODE);
-            }
-        }
-
-        if (preference.getKey().equals(getString(R.string.key_use_account_color))) {
-            getPreferenceManager().getSharedPreferences()
-                    .edit()
-                    .putBoolean(getString(R.string.key_use_account_color), Boolean.valueOf(newValue.toString()))
-                    .commit();
-        }
+    public boolean onPreferenceChange(Preference preference,
+                                      Object newValue) {
 
         //
-        // Preference : use_double_back_button_press_to_quit
+        // Preference : key_use_double_back_button_press_to_quit
         //
 
         if (preference.getKey()
@@ -137,6 +122,74 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat implemen
             getPreferenceManager().getSharedPreferences()
                                   .edit()
                                   .putBoolean(getString(R.string.key_use_double_back_button_press_to_quit),
+                                              Boolean.valueOf(newValue.toString()))
+                                  .commit();
+        }
+
+        //
+        // Set Preference : key_shall_open_keyboard_in_account_searchable_spinner
+        //
+
+        if (preference.getKey()
+                      .equals(getString(R.string.key_shall_open_keyboard_in_account_searchable_spinner))) {
+
+            // Store the new value of the Preference
+            getPreferenceManager().getSharedPreferences()
+                                  .edit()
+                                  .putBoolean(getString(R.string.key_shall_open_keyboard_in_account_searchable_spinner),
+                                              Boolean.valueOf(newValue.toString()))
+                                  .commit();
+        }
+
+        //
+        // Set Preference : key_use_color_in_account_list
+        //
+
+        if (preference.getKey()
+                      .equals(getString(R.string.key_use_color_in_account_list))) {
+
+            // Store the new value of the Preference
+            getPreferenceManager().getSharedPreferences()
+                                  .edit()
+                                  .putBoolean(getString(R.string.key_use_color_in_account_list),
+                                              Boolean.valueOf(newValue.toString()))
+                                  .commit();
+        }
+
+        //
+        // Set Preference : enable_passcode
+        //
+
+        if (preference.getKey()
+                      .equals(getString(R.string.key_enable_passcode))) {
+
+            if ((Boolean) newValue) {
+
+                startActivityForResult(new Intent(getActivity(),
+                                                  PasscodePreferenceActivity.class),
+                                       GeneralPreferenceFragment.PASSCODE_REQUEST_CODE);
+
+            } else {
+
+                Intent passIntent = new Intent(getActivity(),
+                                               PasscodeLockScreenActivity.class);
+                passIntent.putExtra(UxArgument.DISABLE_PASSCODE,
+                                    UxArgument.DISABLE_PASSCODE);
+                startActivityForResult(passIntent,
+                                       GeneralPreferenceFragment.REQUEST_DISABLE_PASSCODE);
+            }
+        }
+
+        //
+        // Set Preference : use_color_in_reports
+        //
+
+        if (preference.getKey()
+                      .equals(getString(R.string.key_use_account_color))) {
+
+            getPreferenceManager().getSharedPreferences()
+                                  .edit()
+                                  .putBoolean(getString(R.string.key_use_account_color),
                                               Boolean.valueOf(newValue.toString()))
                                   .commit();
         }
