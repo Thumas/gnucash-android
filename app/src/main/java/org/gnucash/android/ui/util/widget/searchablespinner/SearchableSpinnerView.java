@@ -4,43 +4,33 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.DialogInterface;
-import android.content.res.TypedArray;
 import android.database.Cursor;
-import android.text.TextUtils;
+import android.support.v4.widget.CursorAdapter;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 
-import org.gnucash.android.R;
 import org.gnucash.android.db.DatabaseSchema;
 import org.gnucash.android.util.QualifiedAccountNameCursorAdapter;
 
-// TODO TW C 2020-02-13 : A renommer SearchableCursorSpinnerView
-public class SearchableSpinnerView
+import java.util.HashMap;
+
+public class SearchableSpinnerView<T_ITEM>
         extends android.support.v7.widget.AppCompatSpinner
         implements View.OnTouchListener,
-                   SearchableListDialogFragment.OnSearchableItemClickedListener<String> {
-
-    public static final int                  NO_ITEM_SELECTED = -1;
+                   SearchableListDialogFragment.OnSearchableItemClickedListener<T_ITEM> {
 
     /**
      * Logging tag
      */
     protected static final String LOG_TAG = "SearchableSpinnerView";
 
-    // Clause WHERE du Cursor (en vue de pouvoir la rejouer pour la filtrer
-    private String   mCursorWhere;
-    private String[] mCursorWhereArgs;
-
-    private SearchableListDialogFragment _searchableListDialogFragment;
-
-    private boolean       _isDirty;
-
-    // TODO TW C 2020-02-16 : A supprimer
-    private String                           _strHintText;
+    // Embedded DialogFragment
+    private SearchableListDialogFragment<T_ITEM> _searchableListDialogFragment;
 
     public SearchableSpinnerView(Context context) {
 
@@ -56,26 +46,26 @@ public class SearchableSpinnerView
               attrs);
 
         // TODO TW C 2020-02-16 : A supprimer ?
-        //
-        // Retrieve attribute value
-        //
-
-        TypedArray a = context.obtainStyledAttributes(attrs,
-                                                      R.styleable.SearchableSpinnerView);
-
-        final int N = a.getIndexCount();
-
-        for (int i = 0; i < N; ++i) {
-
-            int attr = a.getIndex(i);
-
-            if (attr == R.styleable.SearchableSpinnerView_hintText) {
-
-                _strHintText = a.getString(attr);
-            }
-        }
-
-        a.recycle();
+//        //
+//        // Retrieve attribute value
+//        //
+//
+//        TypedArray a = context.obtainStyledAttributes(attrs,
+//                                                      R.styleable.SearchableSpinnerView);
+//
+//        final int N = a.getIndexCount();
+//
+//        for (int i = 0; i < N; ++i) {
+//
+//            int attr = a.getIndex(i);
+//
+//            if (attr == R.styleable.SearchableSpinnerView_hintText) {
+//
+//                _strHintText = a.getString(attr);
+//            }
+//        }
+//
+//        a.recycle();
 
         //
         // Init
@@ -101,44 +91,145 @@ public class SearchableSpinnerView
         _searchableListDialogFragment = SearchableListDialogFragment.makeInstance(this);
 
         // S'abonner aux clicks sur un item
-        _searchableListDialogFragment.setOnSearchableItemClickListener(this);
+        _searchableListDialogFragment.setOnSearchableListItemClickListener(this);
 
         // S'abonner aux évènements onTouch
         setOnTouchListener(this);
     }
 
     @Override
-    public boolean onTouch(View v,
-                           MotionEvent event) {
+    public void setAdapter(SpinnerAdapter adapter) {
 
-        if (_searchableListDialogFragment.isAdded()) {
-            // dialog is already visible
+        // Use given adapter for spinner item (not drop down)
+        super.setAdapter(adapter);
+
+        // TODO TW C 2020-02-26 : A supprimer ?
+        if (QualifiedAccountNameCursorAdapter.class.isAssignableFrom(getAdapter().getClass())) {
+            // The SpinnerAdapter is a QualifiedAccountNameCursorAdapter
 
             // NTD
 
         } else {
-            // dialog is not visible
+            // The SpinnerAdapter is not a QualifiedAccountNameCursorAdapter
 
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                // User has just clicked on the spinner
-
-                // Display SearchableListDialogFragment
-                _searchableListDialogFragment.show(scanForActivity(getContext()).getFragmentManager(),
-                                                       "LOG_TAG");
-            }
+            // Remove DialogFragment
+            // TODO TW C 2020-02-26 : A remettre ?
+//            _searchableListDialogFragment = null;
         }
 
-        return true;
+    }
+
+
+    //
+    // Listeners
+    //
+
+    @Override
+    public boolean onTouch(View v,
+                           MotionEvent event) {
+
+        boolean handled = false;
+
+        // TODO TW C 2020-02-26 : A enlever si j'ai réussi à génériciser même pour Pie Chart
+        if (_searchableListDialogFragment != null) {
+            // There is a DialogFragment defined
+
+            handled = true;
+
+            if (_searchableListDialogFragment.isAdded()) {
+                // dialog is already visible
+
+                // NTD
+
+            } else {
+                // dialog is not visible
+
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    // User has just clicked on the spinner
+
+                    // Display SearchableListDialogFragment
+                    _searchableListDialogFragment.show(scanForActivity(getContext()).getFragmentManager(),
+                                                       "LOG_TAG");
+                }
+            }
+
+        } else {
+            // There is no DialogFragment defined
+
+            // NTD
+        }
+
+        return handled;
+    }
+
+    private Activity scanForActivity(Context context) {
+
+        if (context == null) {
+            return null;
+
+        } else if (context instanceof Activity) {
+            return (Activity) context;
+
+        } else if (context instanceof ContextWrapper) {
+            return scanForActivity(((ContextWrapper) context).getBaseContext());
+        }
+
+        return null;
     }
 
     @Override
-    public void onSearchableItemClicked(String itemAccountUID) {
+    public void onSearchableListItemClicked(T_ITEM item) {
 
-        final Cursor cursor = ((QualifiedAccountNameCursorAdapter) getAdapter()).getCursor();
+        // TODO TW C 2020-02-26 : A supprimer ?
+//        // TODO TW C 2020-02-26 : Il faut chercher dans la liste du spinner (pas dans la ListView du Dialog) l'item fourni en
+//        //  paramètre. Pas besoin de passer le Cursor, car l'Adapter sait naviguer dans ses items, peu importe d'où ils viennent
+//        // parcourir les items, regarder si ça matche. En déduire la position, puis la sélectionner
+//
+//        int itemsCount = getAdapter().getCount();
+//
+//        for (int position = 0; position < itemsCount; position++) {
+//
+//            T_ITEM itemAtPosition = (T_ITEM) getAdapter().getItem(position);
+//
+//            String accountUIDAtPosition = cursor.getString(cursor.getColumnIndex(DatabaseSchema.AccountEntry.COLUMN_UID));
+//
+//            if (item.equals() == itemAtPosition) {
+//                //
+//
+//                //
+//                setSelection(position);
+//
+//                break;
+//
+//            } else {
+//                //  n' pas
+//
+//                // RAF
+//            }
+//
+//        }
 
-        selectSpinnerAccount(cursor,
-                             itemAccountUID,
-                             this);
+        if (CursorAdapter.class.isAssignableFrom(getAdapter().getClass())) {
+            // The Adapter is a CursorAdapter
+
+//            final Cursor cursor = ((CursorAdapter) getAdapter()).getCursor();
+            final Cursor cursor = (Cursor) item;
+
+            String accountUID = cursor.getString(cursor.getColumnIndex(DatabaseSchema.AccountEntry.COLUMN_UID));
+
+            selectSpinnerAccount(cursor,
+                                 accountUID,
+                                 this);
+
+        } else if (getAdapter() instanceof ArrayAdapter) {
+            // The Adapter is a ListAdapter
+
+            setSelection(((ArrayAdapter) getAdapter()).getPosition(item));
+
+        } else {
+
+            // TODO TW C 2020-02-26 : Logguer une erreur
+        }
     }
 
     /**
@@ -161,7 +252,7 @@ public class SearchableSpinnerView
         for (accountsCursor.moveToFirst(); !accountsCursor.isAfterLast(); accountsCursor.moveToNext()) {
 
             String uid  = accountsCursor.getString(accountsCursor.getColumnIndexOrThrow(DatabaseSchema.AccountEntry.COLUMN_UID));
-            String name = accountsCursor.getString(accountsCursor.getColumnIndexOrThrow(DatabaseSchema.AccountEntry.COLUMN_FULL_NAME));
+            String accountFullName = accountsCursor.getString(accountsCursor.getColumnIndexOrThrow(DatabaseSchema.AccountEntry.COLUMN_FULL_NAME));
 
             if (accountUID.equals(uid)) {
                 // Found
@@ -170,7 +261,7 @@ public class SearchableSpinnerView
                       "Account found in current Cursor for ("
                       + accountUID
                       + ") => ("
-                      + name
+                      + accountFullName
                       + "), position ("
                       + spinnerSelectedPosition
                       + ")");
@@ -200,61 +291,9 @@ public class SearchableSpinnerView
         }
     }
 
-    /**
-     * Set the SpinnerAdapter and store the where clause
-     * in order to be able to filter by running the where clause
-     * completed with constraint on the account full name
-     *
-     * @param adapter
-     * @param cursorWhere
-     * @param cursorWhereArgs
-     */
-    public void setAdapter(SpinnerAdapter adapter,
-                           String cursorWhere,
-                           String[] cursorWhereArgs) {
-
-        // Use given adapter for spinner item (not drop down)
-        super.setAdapter(adapter);
-
-        // Store the WHERE clause associated with the Cursor
-        setCursorWhere(cursorWhere);
-        setCursorWhereArgs(cursorWhereArgs);
-    }
-
-    /**
-     * DO NOT USE this method.
-     *
-     * Use the above one
-     *
-     * @param adapter
-     */
-    @Override
-    @Deprecated
-    public void setAdapter(SpinnerAdapter adapter) {
-
-        // Use given adapter for spinner item (not drop down)
-        super.setAdapter(adapter);
-    }
-
-    String getCursorWhere() {
-
-        return mCursorWhere;
-    }
-
-    protected void setCursorWhere(final String cursorWhere) {
-
-        mCursorWhere = cursorWhere;
-    }
-
-    String[] getCursorWhereArgs() {
-
-        return mCursorWhereArgs;
-    }
-
-    protected void setCursorWhereArgs(final String[] cursorWhereArgs) {
-
-        mCursorWhereArgs = cursorWhereArgs;
-    }
+    //
+    // Getters/Setters
+    //
 
     public void setTitle(String strTitle) {
 
@@ -286,43 +325,28 @@ public class SearchableSpinnerView
         _searchableListDialogFragment.setOnCancelListener(listener);
     }
 
-    private Activity scanForActivity(Context cont) {
+//    @Override
+//    public int getSelectedItemPosition() {
+//
+//        if (!TextUtils.isEmpty(_strHintText) && !_isDirty) {
+//            return NO_ITEM_SELECTED;
+//        } else {
+//            // TODO TW M 2020-02-16 : Est-ce que ça devrait aller le chercher dans la SearchableListDialogFragment._listView ?
+//            return super.getSelectedItemPosition();
+////            return _searchableListDialogFragment._listView.getSelectedItemPosition();
+//        }
+//    }
 
-        if (cont == null) {
-            return null;
-
-        } else if (cont instanceof Activity) {
-            return (Activity) cont;
-
-        } else if (cont instanceof ContextWrapper) {
-            return scanForActivity(((ContextWrapper) cont).getBaseContext());
-        }
-
-        return null;
-    }
-
-    @Override
-    public int getSelectedItemPosition() {
-
-        if (!TextUtils.isEmpty(_strHintText) && !_isDirty) {
-            return NO_ITEM_SELECTED;
-        } else {
-            // TODO TW M 2020-02-16 : Est-ce que ça devrait aller le chercher dans la SearchableListDialogFragment._listView ?
-            return super.getSelectedItemPosition();
-//            return _searchableListDialogFragment._listView.getSelectedItemPosition();
-        }
-    }
-
-    @Override
-    public Object getSelectedItem() {
-
-        if (!TextUtils.isEmpty(_strHintText) && !_isDirty) {
-            return null;
-        } else {
-            // TODO TW M 2020-02-16 : Est-ce que ça devrait aller le chercher dans la SearchableListDialogFragment._listView ?
-            return super.getSelectedItem();
-//            return _searchableListDialogFragment._listView.getSelectedItem();
-        }
-    }
+//    @Override
+//    public Object getSelectedItem() {
+//
+//        if (!TextUtils.isEmpty(_strHintText) && !_isDirty) {
+//            return null;
+//        } else {
+//            // TODO TW M 2020-02-16 : Est-ce que ça devrait aller le chercher dans la SearchableListDialogFragment._listView ?
+//            return super.getSelectedItem();
+////            return _searchableListDialogFragment._listView.getSelectedItem();
+//        }
+//    }
 
 }
