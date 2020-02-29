@@ -67,6 +67,7 @@ import org.gnucash.android.ui.colorpicker.ColorPickerSwatch;
 import org.gnucash.android.ui.colorpicker.ColorSquare;
 import org.gnucash.android.ui.common.UxArgument;
 import org.gnucash.android.ui.settings.PreferenceActivity;
+import org.gnucash.android.ui.util.AccountUtils;
 import org.gnucash.android.ui.util.widget.searchablespinner.SearchableSpinnerView;
 import org.gnucash.android.util.CommoditiesCursorAdapter;
 import org.gnucash.android.util.QualifiedAccountNameCursorAdapter;
@@ -181,8 +182,6 @@ public class AccountFormFragment extends Fragment {
     /**
      * Spinner for selecting the default transfer account
      */
-    // TODO TW C 2020-01-18 : A remplacer par un SearchableSpinner + Vérifier exclure Placeholder + Etoile des Favoris + 1
-    //  seule ligne
     @BindView(R.id.input_default_transfer_account)
     SearchableSpinnerView mDefaultTransferAccountSpinner;
 
@@ -583,25 +582,10 @@ public class AccountFormFragment extends Fragment {
     private void loadDefaultTransferAccountList() {
 
         // Get Accounts that are not hidden, nor Placeholder, nor root Account, nor the edited Account itself
-        String condition = DatabaseSchema.AccountEntry.COLUMN_UID
-                           + " != '"
-                           + mAccountUID
-                           + "' "
-                           //when creating a new account mAccountUID is null, so don't use whereArgs
-                           + " AND "
-                           + DatabaseSchema.AccountEntry.COLUMN_PLACEHOLDER
-                           + "=0"
-                           + " AND "
-                           + DatabaseSchema.AccountEntry.COLUMN_HIDDEN
-                           + "=0"
-                           + " AND "
-                           + DatabaseSchema.AccountEntry.COLUMN_TYPE
-                           + " != ?";
+        String where = AccountUtils.getTransfertAccountWhereClause(mAccountUID);
 
-        final String[] whereArgs = {AccountType.ROOT.name()};
-
-        Cursor defaultTransferAccountCursor = mAccountsDbAdapter.fetchAccountsOrderedByFavoriteAndFullName(condition,
-                                                                                                           whereArgs);
+        Cursor defaultTransferAccountCursor = mAccountsDbAdapter.fetchAccountsOrderedByFavoriteAndFullName(where,
+                                                                                                           null);
 
         if (mDefaultTransferAccountSpinner.getCount() <= 0) {
             setDefaultTransferAccountInputsVisible(false);
@@ -609,9 +593,8 @@ public class AccountFormFragment extends Fragment {
 
         mDefaultTransferAccountCursorAdapter = new QualifiedAccountNameCursorAdapter(getActivity(),
                                                                                      defaultTransferAccountCursor,
-                                                                                     condition,
-                                                                                     whereArgs,
-                                                                                     // TODO TW C 2020-02-08 : Améliorer la colorisation
+                                                                                     where,
+                                                                                     null,
                                                                                      R.layout.account_spinner_dropdown_item);
 
         mDefaultTransferAccountSpinner.setAdapter(mDefaultTransferAccountCursorAdapter);
@@ -628,7 +611,7 @@ public class AccountFormFragment extends Fragment {
         // Build SQL request
         //
 
-        String condition = DatabaseSchema.SplitEntry.COLUMN_TYPE
+        String where = DatabaseSchema.SplitEntry.COLUMN_TYPE
                            + " IN ("
                            + getAllowedParentAccountTypes(accountType)
                            + ") AND "
@@ -660,7 +643,7 @@ public class AccountFormFragment extends Fragment {
             }
 
             // Exclude Accounts to Exclude and edited Account itself
-            condition += " AND ("
+            where += " AND ("
                          + DatabaseSchema.AccountEntry.COLUMN_UID
                          + " NOT IN ( '"
                          + TextUtils.join("','",
@@ -675,7 +658,7 @@ public class AccountFormFragment extends Fragment {
             mParentAccountCursor.close();
         }
 
-        mParentAccountCursor = mAccountsDbAdapter.fetchAccountsOrderedByFavoriteAndFullName(condition,
+        mParentAccountCursor = mAccountsDbAdapter.fetchAccountsOrderedByFavoriteAndFullName(where,
                                                                                             null);
 
         //
@@ -712,9 +695,8 @@ public class AccountFormFragment extends Fragment {
 
         mParentAccountCursorAdapter = new QualifiedAccountNameCursorAdapter(getActivity(),
                                                                             mParentAccountCursor,
-                                                                            condition,
+                                                                            where,
                                                                             null,
-                                                                            // TODO TW C 2020-02-08 : Améliorer la colorisation
                                                                             R.layout.account_spinner_dropdown_item);
 
         mParentAccountSpinner.setAdapter(mParentAccountCursorAdapter);

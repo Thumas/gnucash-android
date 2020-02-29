@@ -60,6 +60,7 @@ import org.gnucash.android.model.TransactionType;
 import org.gnucash.android.ui.common.FormActivity;
 import org.gnucash.android.ui.common.UxArgument;
 import org.gnucash.android.ui.transaction.dialog.TransferFundsDialogFragment;
+import org.gnucash.android.ui.util.AccountUtils;
 import org.gnucash.android.ui.util.widget.CalculatorEditText;
 import org.gnucash.android.ui.util.widget.CalculatorKeyboard;
 import org.gnucash.android.ui.util.widget.TransactionTypeSwitch;
@@ -83,12 +84,12 @@ public class SplitEditorFragment extends Fragment {
     @BindView(R.id.calculator_keyboard) KeyboardView mKeyboardView;
     @BindView(R.id.imbalance_textview)  TextView mImbalanceTextView;
 
-    private AccountsDbAdapter   mAccountsDbAdapter;
-    private Cursor              mCursor;
-    private SimpleCursorAdapter mAccountCursorAdapter;
-    private List<View>          mSplitItemViewList;
-    private String              mAccountUID;
-    private Commodity           mCommodity;
+    private AccountsDbAdapter mAccountsDbAdapter;
+    private Cursor mCursor;
+    private SimpleCursorAdapter mCursorAdapter;
+    private List<View> mSplitItemViewList;
+    private String mAccountUID;
+    private Commodity mCommodity;
 
     private BigDecimal mBaseAmount = BigDecimal.ZERO;
 
@@ -217,11 +218,11 @@ public class SplitEditorFragment extends Fragment {
         mBaseAmount = new BigDecimal(args.getString(UxArgument.AMOUNT_STRING));
 
         // Get account list that are not hidden nor placeholder, and sort them with Favorites first
-        String conditions = "("
+        String where = "("
                 + DatabaseSchema.AccountEntry.COLUMN_HIDDEN + " = 0 AND "
                 + DatabaseSchema.AccountEntry.COLUMN_PLACEHOLDER + " = 0"
                 + ")";
-        mCursor = mAccountsDbAdapter.fetchAccountsOrderedByFavoriteAndFullName(conditions, null);
+        mCursor = mAccountsDbAdapter.fetchAccountsOrderedByFavoriteAndFullName(where, null);
 
         mCommodity = CommoditiesDbAdapter.getInstance().getCommodity(mAccountsDbAdapter.getCurrencyCode(mAccountUID));
     }
@@ -330,8 +331,8 @@ public class SplitEditorFragment extends Fragment {
      * @param accountId Database ID of the transfer account
      */
     private void setSelectedTransferAccount(long accountId, final Spinner accountsSpinner){
-        for (int pos = 0; pos < mAccountCursorAdapter.getCount(); pos++) {
-            if (mAccountCursorAdapter.getItemId(pos) == accountId){
+        for (int pos = 0; pos < mCursorAdapter.getCount(); pos++) {
+            if (mCursorAdapter.getItemId(pos) == accountId){
                 accountsSpinner.setSelection(pos);
                 break;
             }
@@ -342,18 +343,22 @@ public class SplitEditorFragment extends Fragment {
      * Updates the list of possible transfer accounts.
      * Only accounts with the same currency can be transferred to
      */
-    private void updateTransferAccountsList(Spinner transferAccountSpinnerView) {
+    private void updateTransferAccountsList(Spinner transferAccountSpinner){
 
         //
         // Fetch Accounts from DB sorted with Favorites at first
         //
 
-        // Adapter in order to make Cursor adapted to be put in a View
-        mAccountCursorAdapter = new QualifiedAccountNameCursorAdapter(getActivity(),
-                                                                      mCursor);
+        // In Splits, an account is allowed to appear many times, therefore there is no restriction on uid
+        String where = AccountUtils.getTransfertAccountWhereClause(null);
+
+        mCursorAdapter = new QualifiedAccountNameCursorAdapter(getActivity(),
+                                                               mCursor,
+                                                               where,
+                                                               null);
 
         // Put the Adapter in the View
-        transferAccountSpinnerView.setAdapter(mAccountCursorAdapter);
+        transferAccountSpinner.setAdapter(mCursorAdapter);
     }
 
     /**
