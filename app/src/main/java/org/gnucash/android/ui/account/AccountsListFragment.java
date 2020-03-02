@@ -585,7 +585,9 @@ public class AccountsListFragment extends Fragment implements
             long accoundId;
 
             public AccountViewHolder(View itemView) {
+
                 super(itemView);
+
                 ButterKnife.bind(this, itemView);
 
                 optionsMenu.setOnClickListener(new View.OnClickListener() {
