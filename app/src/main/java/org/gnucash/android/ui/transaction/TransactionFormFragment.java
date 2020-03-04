@@ -524,6 +524,9 @@ public class TransactionFormFragment extends Fragment implements
 		mDescriptionEditText.setText(mTransaction.getDescription());
         mDescriptionEditText.setSelection(mDescriptionEditText.getText().length());
 
+        mTransactionTypeSwitch.setViewsToColorize(mAmountEditText,
+                                                  mCurrencyTextView);
+
         mTransactionTypeSwitch.setAccountType(mAccountType);
         mTransactionTypeSwitch.setChecked(mTransaction.getBalance(mAccountUID).isNegative());
 
@@ -611,7 +614,11 @@ public class TransactionFormFragment extends Fragment implements
 		mTimeTextView.setText(TIME_FORMATTER.format(time));
 		mTime = mDate = Calendar.getInstance();
 
+        mTransactionTypeSwitch.setViewsToColorize(mAmountEditText,
+                                                  mCurrencyTextView);
+
         mTransactionTypeSwitch.setAccountType(mAccountType);
+
 		String typePref = PreferenceActivity.getActiveBookSharedPreferences().getString(getString(R.string.key_default_transaction_type), "DEBIT");
         mTransactionTypeSwitch.setChecked(TransactionType.valueOf(typePref));
 
@@ -727,7 +734,8 @@ public class TransactionFormFragment extends Fragment implements
 	 * Sets click listeners for the dialog buttons
 	 */
 	private void setListeners() {
-		mTransactionTypeSwitch.setAmountFormattingListener(mAmountEditText, mCurrencyTextView);
+
+        mTransactionTypeSwitch.setColorizeOnCheckedChangeListener();
 
 		mDateTextView.setOnClickListener(new View.OnClickListener() {
 

@@ -80,6 +80,10 @@ import butterknife.ButterKnife;
  */
 public class SplitEditorFragment extends Fragment {
 
+    //
+    // SplitEditorFragment
+    //
+
     @BindView(R.id.split_list_layout)   LinearLayout mSplitsLinearLayout;
     @BindView(R.id.calculator_keyboard) KeyboardView mKeyboardView;
     @BindView(R.id.imbalance_textview)  TextView mImbalanceTextView;
@@ -238,128 +242,6 @@ public class SplitEditorFragment extends Fragment {
     }
 
     /**
-     * Holds a split item view and binds the items in it
-     */
-    class SplitViewHolder implements OnTransferFundsListener{
-        @BindView(R.id.split_currency_symbol)
-        TextView              splitCurrencyTextView;
-        @BindView(R.id.input_split_amount)
-        CalculatorEditText    splitAmountEditText;
-        @BindView(R.id.btn_split_type)
-        TransactionTypeSwitch splitTypeSwitch;
-        @BindView(R.id.btn_remove_split)
-        ImageView             removeSplitButton;
-        @BindView(R.id.input_accounts_spinner)
-        Spinner               accountsSpinner;
-        @BindView(R.id.input_split_memo)
-        EditText              splitMemoEditText;
-        @BindView(R.id.split_uid)
-        TextView              splitUidTextView;
-
-        View splitView;
-        Money quantity;
-
-        public SplitViewHolder(View splitView,
-                               Split split) {
-
-            ButterKnife.bind(this,
-                             splitView);
-
-            this.splitView = splitView;
-
-            if (split != null && !split.getQuantity()
-                                       .equals(split.getValue())) {
-                this.quantity = split.getQuantity();
-            }
-
-            // #876 Set the splitTypeSwitch according to split type
-            this.splitTypeSwitch.setChecked(split.getType());
-
-            setListeners(split);
-        }
-
-        @Override
-        public void transferComplete(Money amount) {
-            quantity = amount;
-        }
-
-        private void setListeners(Split split){
-            splitAmountEditText.bindListeners(mCalculatorKeyboard);
-
-            removeSplitButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    mSplitsLinearLayout.removeView(splitView);
-                    mSplitItemViewList.remove(splitView);
-                    mImbalanceWatcher.afterTextChanged(null);
-                }
-            });
-
-            updateTransferAccountsList(accountsSpinner);
-
-            splitCurrencyTextView.setText(mCommodity.getSymbol());
-
-            // Set an amount formatting listener
-            splitTypeSwitch.setAmountFormattingListener(splitAmountEditText, splitCurrencyTextView);
-
-            // Switch on/off according to amount signum
-            splitTypeSwitch.setChecked(mBaseAmount.signum() > 0);
-
-            splitUidTextView.setText(BaseModel.generateUID());
-
-            if (split != null) {
-                splitAmountEditText.setCommodity(split.getValue().getCommodity());
-                splitAmountEditText.setValue(split.getFormattedValue().asBigDecimal());
-                splitCurrencyTextView.setText(split.getValue().getCommodity().getSymbol());
-                splitMemoEditText.setText(split.getMemo());
-                splitUidTextView.setText(split.getUID());
-                String splitAccountUID = split.getAccountUID();
-                setSelectedTransferAccount(mAccountsDbAdapter.getID(splitAccountUID), accountsSpinner);
-                splitTypeSwitch.setAccountType(mAccountsDbAdapter.getAccountType(splitAccountUID));
-                splitTypeSwitch.setChecked(split.getType());
-            }
-
-            accountsSpinner.setOnItemSelectedListener(new SplitAccountListener(splitTypeSwitch, this));
-            splitTypeSwitch.addOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    mImbalanceWatcher.afterTextChanged(null);
-                }
-            });
-            splitAmountEditText.addTextChangedListener(mImbalanceWatcher);
-        }
-
-        /**
-         * Returns the value of the amount in the splitAmountEditText field without setting the value to the view
-         * <p>If the expression in the view is currently incomplete or invalid, null is returned.
-         * This method is used primarily for computing the imbalance</p>
-         * @return Value in the split item amount field, or {@link BigDecimal#ZERO} if the expression is empty or invalid
-         */
-        public BigDecimal getAmountValue(){
-            String amountString = splitAmountEditText.getCleanString();
-            if (amountString.isEmpty())
-                return BigDecimal.ZERO;
-
-            ExpressionBuilder expressionBuilder = new ExpressionBuilder(amountString);
-            Expression expression;
-
-            try {
-                expression = expressionBuilder.build();
-            } catch (RuntimeException e) {
-                return BigDecimal.ZERO;
-            }
-
-            if (expression != null && expression.validate().isValid()) {
-                return new BigDecimal(expression.evaluate());
-            } else {
-                Log.v(SplitEditorFragment.this.getClass().getSimpleName(),
-                        "Incomplete expression for updating imbalance: " + expression);
-                return BigDecimal.ZERO;
-            }
-        }
-    }
-
-    /**
      * Updates the spinner to the selected transfer account
      * @param accountId Database ID of the transfer account
      */
@@ -477,18 +359,228 @@ public class SplitEditorFragment extends Fragment {
         return splitList;
     }
 
+    //
+    // SplitViewHolder
+    //
+
+    /**
+     * Holds a split item view and binds the items in it
+     */
+    class SplitViewHolder
+            implements OnTransferFundsListener {
+
+        @BindView(R.id.split_currency_symbol)
+        TextView              splitCurrencyTextView;
+        @BindView(R.id.input_split_amount)
+        CalculatorEditText    splitAmountEditText;
+        @BindView(R.id.btn_split_type)
+        TransactionTypeSwitch splitTypeSwitch;
+        @BindView(R.id.btn_remove_split)
+        ImageView             removeSplitButton;
+        @BindView(R.id.input_accounts_spinner)
+        Spinner               accountsSpinner;
+        @BindView(R.id.input_split_memo)
+        EditText              splitMemoEditText;
+        @BindView(R.id.split_uid)
+        TextView              splitUidTextView;
+
+        private View  splitView;
+        private Money quantity;
+
+        public SplitViewHolder(View splitView,
+                               Split split) {
+
+            ButterKnife.bind(this,
+                             splitView);
+
+            this.splitView = splitView;
+
+            // Set Listeners
+            setListeners();
+
+            if (split != null && !split.getQuantity()
+                                       .equals(split.getValue())) {
+                this.quantity = split.getQuantity();
+            }
+
+            // Init Views from split
+            initViews(split);
+        }
+
+        private void setListeners() {
+
+            //
+            // Listeners on splitAmountEditText
+            //
+
+            splitAmountEditText.bindListeners(mCalculatorKeyboard);
+
+            splitAmountEditText.addTextChangedListener(mImbalanceWatcher);
+
+            //
+            // Listeners on removeSplitButton
+            //
+
+            removeSplitButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+
+                    mSplitsLinearLayout.removeView(splitView);
+                    mSplitItemViewList.remove(splitView);
+                    mImbalanceWatcher.afterTextChanged(null);
+                }
+            });
+
+            //
+            // Listeners on accountsSpinner
+            //
+
+            accountsSpinner.setOnItemSelectedListener(new SplitTransferAccountSelectedListener(splitTypeSwitch,
+                                                                                               this));
+
+            //
+            // Listeners on splitTypeSwitch
+            //
+
+            // Set a ColorizeOnTransactionTypeChange listener
+            splitTypeSwitch.setColorizeOnCheckedChangeListener();
+
+            splitTypeSwitch.addOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView,
+                                             boolean isChecked) {
+
+                    mImbalanceWatcher.afterTextChanged(null);
+                }
+            });
+        }
+
+        private void initViews(final Split split) {
+
+            //
+            // splitTypeSwitch
+            //
+
+            splitTypeSwitch.setViewsToColorize(splitAmountEditText,
+                                               splitCurrencyTextView);
+
+            // TODO TW C 2020-03-03 : A enlever ou mettre dans un else ?
+            // Switch on/off according to amount signum
+            splitTypeSwitch.setChecked(mBaseAmount.signum() > 0);
+
+            //
+            // Fill spinner
+            //
+
+            updateTransferAccountsList(accountsSpinner);
+
+            //
+            // Display Currency
+            //
+
+            splitCurrencyTextView.setText(mCommodity.getSymbol());
+
+            //
+            // uid
+            //
+
+            splitUidTextView.setText(BaseModel.generateUID());
+
+            //
+            // Handle split
+            //
+
+            if (split != null) {
+                // There is a valid Split
+
+                splitAmountEditText.setCommodity(split.getValue()
+                                                      .getCommodity());
+                splitAmountEditText.setValue(split.getFormattedValue()
+                                                  .asBigDecimal());
+
+                splitCurrencyTextView.setText(split.getValue()
+                                                   .getCommodity()
+                                                   .getSymbol());
+
+                splitMemoEditText.setText(split.getMemo());
+
+                splitUidTextView.setText(split.getUID());
+
+                String splitAccountUID = split.getAccountUID();
+                setSelectedTransferAccount(mAccountsDbAdapter.getID(splitAccountUID),
+                                           accountsSpinner);
+
+                splitTypeSwitch.setAccountType(mAccountsDbAdapter.getAccountType(splitAccountUID));
+
+                splitTypeSwitch.setChecked(split.getType());
+            }
+        }
+
+        /**
+         * Returns the value of the amount in the splitAmountEditText field without setting the value to the view
+         * <p>If the expression in the view is currently incomplete or invalid, null is returned.
+         * This method is used primarily for computing the imbalance</p>
+         *
+         * @return Value in the split item amount field, or {@link BigDecimal#ZERO} if the expression is empty or invalid
+         */
+        public BigDecimal getAmountValue() {
+
+            String amountString = splitAmountEditText.getCleanString();
+            if (amountString.isEmpty()) {
+                return BigDecimal.ZERO;
+            }
+
+            ExpressionBuilder expressionBuilder = new ExpressionBuilder(amountString);
+            Expression        expression;
+
+            try {
+                expression = expressionBuilder.build();
+            } catch (RuntimeException e) {
+                return BigDecimal.ZERO;
+            }
+
+            if (expression != null && expression.validate()
+                                                .isValid()) {
+                return new BigDecimal(expression.evaluate());
+            } else {
+                Log.v(SplitEditorFragment.this.getClass()
+                                              .getSimpleName(),
+                      "Incomplete expression for updating imbalance: " + expression);
+                return BigDecimal.ZERO;
+            }
+        }
+
+        @Override
+        public void transferComplete(Money amount) {
+
+            quantity = amount;
+        }
+
+    }
+
+    //
+    // BalanceTextWatcher
+    //
+
     /**
      * Updates the displayed balance of the accounts when the amount of a split is changed
      */
-    private class BalanceTextWatcher implements TextWatcher {
+    private class BalanceTextWatcher
+            implements TextWatcher {
 
         @Override
-        public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+        public void beforeTextChanged(CharSequence charSequence,
+                                      int i,
+                                      int i2,
+                                      int i3) {
             //nothing to see here, move along
         }
 
         @Override
-        public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+        public void onTextChanged(CharSequence charSequence,
+                                  int i,
+                                  int i2,
+                                  int i3) {
             //nothing to see here, move along
         }
 
@@ -552,49 +644,79 @@ public class SplitEditorFragment extends Fragment {
         }
     }
 
+    //
+    // SplitTransferAccountSelectedListener
+    //
+
     /**
      * Listens to changes in the transfer account and updates the currency symbol, the label of the
      * transaction type and if neccessary
      */
-    private class SplitAccountListener implements AdapterView.OnItemSelectedListener {
-        TransactionTypeSwitch mTypeToggleButton;
-        SplitViewHolder mSplitViewHolder;
+    private class SplitTransferAccountSelectedListener
+            implements AdapterView.OnItemSelectedListener {
+
+        private TransactionTypeSwitch mTransactionTypeSwitch;
+        private SplitViewHolder       mSplitViewHolder;
 
         /**
          * Flag to know when account spinner callback is due to user interaction or layout of components
          */
         boolean userInteraction = false;
 
-        public SplitAccountListener(TransactionTypeSwitch typeToggleButton, SplitViewHolder viewHolder){
-            this.mTypeToggleButton = typeToggleButton;
+        public SplitTransferAccountSelectedListener(TransactionTypeSwitch transactionTypeSwitch,
+                                                    SplitViewHolder viewHolder) {
+
             this.mSplitViewHolder = viewHolder;
+
+            this.mTransactionTypeSwitch = transactionTypeSwitch;
+            this.mTransactionTypeSwitch.setViewsToColorize(mSplitViewHolder.splitAmountEditText,
+                                                           mSplitViewHolder.splitCurrencyTextView);
         }
 
+        /**
+         * Called when user has chosen a new Account for the split
+         * using the spinner
+         *
+         * @param parentView
+         * @param selectedItemView
+         * @param position
+         * @param id
+         */
         @Override
-        public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+        public void onItemSelected(AdapterView<?> parentView,
+                                   View selectedItemView,
+                                   int position,
+                                   long id) {
+
             AccountType accountType = mAccountsDbAdapter.getAccountType(id);
-            mTypeToggleButton.setAccountType(accountType);
+
+            mTransactionTypeSwitch.setAccountType(accountType);
 
             //refresh the imbalance amount if we change the account
             mImbalanceWatcher.afterTextChanged(null);
 
-            String fromCurrencyCode = mAccountsDbAdapter.getCurrencyCode(mAccountUID);
+            String fromCurrencyCode   = mAccountsDbAdapter.getCurrencyCode(mAccountUID);
             String targetCurrencyCode = mAccountsDbAdapter.getCurrencyCode(mAccountsDbAdapter.getUID(id));
 
-            if (!userInteraction || fromCurrencyCode.equals(targetCurrencyCode)){
+            if (!userInteraction || fromCurrencyCode.equals(targetCurrencyCode)) {
                 //first call is on layout, subsequent calls will be true and transfer will work as usual
                 userInteraction = true;
                 return;
             }
 
             BigDecimal amountBigD = mSplitViewHolder.splitAmountEditText.getValue();
-            if (amountBigD == null)
+            if (amountBigD == null) {
                 return;
+            }
 
-            Money amount = new Money(amountBigD, Commodity.getInstance(fromCurrencyCode));
-            TransferFundsDialogFragment fragment
-                    = TransferFundsDialogFragment.getInstance(amount, targetCurrencyCode, mSplitViewHolder);
-            fragment.show(getFragmentManager(), "tranfer_funds_editor");
+            Money amount = new Money(amountBigD,
+                                     Commodity.getInstance(fromCurrencyCode));
+
+            TransferFundsDialogFragment fragment = TransferFundsDialogFragment.getInstance(amount,
+                                                                                           targetCurrencyCode,
+                                                                                           mSplitViewHolder);
+            fragment.show(getFragmentManager(),
+                          "tranfer_funds_editor");
         }
 
         @Override
