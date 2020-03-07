@@ -153,10 +153,9 @@ public class SplitEditorFragment extends Fragment {
             view.findViewById(R.id.input_accounts_spinner).setEnabled(false);
             view.findViewById(R.id.btn_remove_split).setVisibility(View.GONE);
 
-            TransactionsActivity.displayBalance(mImbalanceTextView,
-                                                new Money(mBaseAmount.negate(),
-                                                          mCommodity),
-                                                accountType);
+            accountType.displayBalance(mImbalanceTextView,
+                                       new Money(mBaseAmount.negate(),
+                                                 mCommodity));
         }
 
     }
@@ -468,7 +467,6 @@ public class SplitEditorFragment extends Fragment {
             splitTypeSwitch.setViewsToColorize(splitAmountEditText,
                                                splitCurrencyTextView);
 
-            // TODO TW C 2020-03-03 : A enlever ou mettre dans un else ?
             // Switch on/off according to amount signum
             splitTypeSwitch.setChecked(mBaseAmount.signum() > 0);
 
@@ -491,7 +489,7 @@ public class SplitEditorFragment extends Fragment {
             splitUidTextView.setText(BaseModel.generateUID());
 
             //
-            // Handle split
+            // Fill views from Split data
             //
 
             if (split != null) {
@@ -499,8 +497,11 @@ public class SplitEditorFragment extends Fragment {
 
                 splitAmountEditText.setCommodity(split.getValue()
                                                       .getCommodity());
-                splitAmountEditText.setValue(split.getFormattedValue()
-                                                  .asBigDecimal());
+
+                // TODO TW C 2020-03-07 : Mettre une préférence pour le signe
+                // Display abs value because switch button is visible
+                splitAmountEditText.setValue(split.getValueWithSignum()
+                                                  .asBigDecimal().abs());
 
                 splitCurrencyTextView.setText(split.getValue()
                                                    .getCommodity()
@@ -643,10 +644,9 @@ public class SplitEditorFragment extends Fragment {
 
             } // for
 
-            TransactionsActivity.displayBalance(mImbalanceTextView,
-                                                new Money(imbalance,
-                                                          mCommodity),
-                                                null);
+            AccountType.ASSET.displayBalance(mImbalanceTextView,
+                                             new Money(imbalance,
+                                                       mCommodity));
         }
     }
 
