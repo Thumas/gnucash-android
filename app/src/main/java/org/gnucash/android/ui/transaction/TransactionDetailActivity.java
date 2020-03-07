@@ -63,6 +63,10 @@ public class TransactionDetailActivity extends PasscodeLockActivity {
 
             accountName.setText(accountsDbAdapter.getAccountFullName(accountUID));
 
+            // Set color according to Account
+            AccountUtils.setAccountTextColor(accountName,
+                                             accountUID);
+
             // quantity (positive or negative number)
             Money    quantity    = split.getFormattedQuantity();
 

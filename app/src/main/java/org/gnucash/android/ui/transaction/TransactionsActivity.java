@@ -18,6 +18,7 @@
 package org.gnucash.android.ui.transaction;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.drawable.ColorDrawable;
@@ -60,6 +61,7 @@ import org.gnucash.android.ui.common.FormActivity;
 import org.gnucash.android.ui.common.Refreshable;
 import org.gnucash.android.ui.common.UxArgument;
 import org.gnucash.android.ui.util.AccountBalanceTask;
+import org.gnucash.android.ui.util.widget.TransactionTypeSwitch;
 import org.gnucash.android.ui.util.widget.searchablespinner.SearchableSpinnerView;
 import org.gnucash.android.util.QualifiedAccountNameCursorAdapter;
 import org.joda.time.LocalDate;
