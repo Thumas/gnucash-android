@@ -152,7 +152,11 @@ public class SplitEditorFragment extends Fragment {
             View view = addSplitView(split);
             view.findViewById(R.id.input_accounts_spinner).setEnabled(false);
             view.findViewById(R.id.btn_remove_split).setVisibility(View.GONE);
-            TransactionsActivity.displayBalance(mImbalanceTextView, new Money(mBaseAmount.negate(), mCommodity));
+
+            TransactionsActivity.displayBalance(mImbalanceTextView,
+                                                new Money(mBaseAmount.negate(),
+                                                          mCommodity),
+                                                accountType);
         }
 
     }
@@ -594,6 +598,7 @@ public class SplitEditorFragment extends Fragment {
             BigDecimal imbalance = BigDecimal.ZERO;
 
             for (View splitItem : mSplitItemViewList) {
+
                 SplitViewHolder viewHolder = (SplitViewHolder) splitItem.getTag();
 
                 // Get the absolute value of the amount
@@ -640,7 +645,8 @@ public class SplitEditorFragment extends Fragment {
 
             TransactionsActivity.displayBalance(mImbalanceTextView,
                                                 new Money(imbalance,
-                                                          mCommodity));
+                                                          mCommodity),
+                                                null);
         }
     }
 

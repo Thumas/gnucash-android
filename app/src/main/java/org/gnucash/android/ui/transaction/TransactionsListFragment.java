@@ -289,7 +289,10 @@ public class TransactionsListFragment extends Fragment implements
 
 			final String transactionUID = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseSchema.TransactionEntry.COLUMN_UID));
 			Money amount = mTransactionsDbAdapter.getBalance(transactionUID, mAccountUID);
-			TransactionsActivity.displayBalance(holder.transactionAmount, amount);
+			TransactionsActivity.displayBalance(holder.transactionAmount,
+												amount,
+												GnuCashApplication.getAccountsDbAdapter()
+																  .getAccountType(mAccountUID));
 
 			long dateMillis = cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseSchema.TransactionEntry.COLUMN_TIMESTAMP));
 			String dateText = TransactionsActivity.getPrettyDateFormat(getActivity(), dateMillis);
