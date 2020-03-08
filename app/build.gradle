@@ -170,12 +170,12 @@ def initCrashlyticsPropertiesIfNeeded() {
 }
 
 afterEvaluate {
-    apply plugin: 'spoon'
-    spoon {
-        debug = true
-        grantAllPermissions = true
-        codeCoverage = true
-    }
+//    apply plugin: 'spoon'
+//    spoon {
+//        debug = true
+//        grantAllPermissions = true
+//        codeCoverage = true
+//    }
     initCrashlyticsPropertiesIfNeeded()
 }
 
