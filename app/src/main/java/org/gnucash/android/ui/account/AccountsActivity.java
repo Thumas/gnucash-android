@@ -401,6 +401,10 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
             // Default preference to use colors in account lists
             prefs.edit().putBoolean(getString(R.string.key_use_color_in_account_list),true).apply();
 
+            // Default preference not to show negative number in splits
+            prefs.edit().putBoolean(getString(R.string.key_display_negative_signum_in_splits), false).apply();
+
+
             // Finish Activity
             finish();
 
