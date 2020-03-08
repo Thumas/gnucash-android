@@ -28,6 +28,7 @@ import org.gnucash.android.ui.common.FormActivity;
 import org.gnucash.android.ui.common.UxArgument;
 import org.gnucash.android.ui.passcode.PasscodeLockActivity;
 import org.gnucash.android.ui.util.AccountTypeUtils;
+import org.gnucash.android.ui.util.AccountUtils;
 
 import java.text.DateFormat;
 import java.util.Date;
