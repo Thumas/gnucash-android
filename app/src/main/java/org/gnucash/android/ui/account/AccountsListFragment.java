@@ -23,7 +23,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
@@ -31,6 +33,7 @@ import android.support.v4.content.Loader;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
@@ -503,8 +506,14 @@ public class AccountsListFragment extends Fragment implements
 
             // add a summary of transactions to the account view
 
-            // Make sure the balance task is truly multithread
-            new AccountBalanceTask(holder.accountBalance).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, accountUID);
+            // Get Preference about showing signum in Splits
+            boolean shallDisplayNegativeSignumInSplits = PreferenceManager.getDefaultSharedPreferences(getActivity())
+                                                                          .getBoolean(getString(R.string.key_display_negative_signum_in_splits),
+                                                                                      false);
+                // Make sure the balance task is truly multithread
+            new AccountBalanceTask(holder.accountBalance,
+                                   shallDisplayNegativeSignumInSplits).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
+                                                                                         accountUID);
 
             // #871 Display inherited color from ancestor's account on the Strip View
             int colorCode = AccountsDbAdapter.getActiveAccountColorResource(accountUID);

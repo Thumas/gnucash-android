@@ -44,6 +44,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.FilterQueryProvider;
 import android.widget.ImageView;
@@ -507,19 +508,31 @@ public class TransactionFormFragment extends Fragment implements
                 boolean isSplitPair = splitList.size() == 2 && splitList.get(0)
                                                                         .isPairOf(splitList.get(1));
                 if (isSplitPair) {
+
                     mSplitsList.clear();
-                    if (!amountEntered) //if user already entered an amount
-                    {
+
+                    if (!amountEntered) {
+                        // user already entered an amount
+
+                        // TODO TW C 2020-05-23 : Il faudrait homogénéïser en appelant updateAmountEditText ?
                         mAmountEditText.setValue(splitList.get(0)
                                                           .getValue()
                                                           .asBigDecimal());
                     }
+
                 } else {
-                    if (amountEntered) { //if user entered own amount, clear loaded splits and use the user value
+
+                    if (amountEntered) {
+                        //if user entered own amount, clear loaded splits and use the user value
+
                         mSplitsList.clear();
                         setDoubleEntryViewsVisibility(View.VISIBLE);
+
                     } else {
-                        if (mUseDoubleEntry) { //don't hide the view in single entry mode
+
+                        if (mUseDoubleEntry) {
+                            //don't hide the view in single entry mode
+
                             setDoubleEntryViewsVisibility(View.GONE);
                         }
                     }
@@ -583,18 +596,11 @@ public class TransactionFormFragment extends Fragment implements
         if (!mAmountEditText.isInputModified()) {
             //when autocompleting, only change the amount if the user has not manually changed it already
 
-            // Compute balance signed value and display it
-            final BigDecimal signedTransactionBalance = mTransaction.getBalance(mAccountUID)
-                                                                    .asBigDecimal();
+            // Compute balance signed value of saved transaction
+            final Money signedTransactionBalance = Transaction.computeBalance(mAccountUID,
+                                                                              mSplitsList);
 
-            // Get Preference about showing signum in Splits
-            boolean shallDisplayNegativeSignumInSplits = PreferenceManager.getDefaultSharedPreferences(getActivity())
-                                                                          .getBoolean(getString(R.string.key_display_negative_signum_in_splits),
-                                                                                      false);
-
-            mAmountEditText.setValue(isSimpleSplit && !shallDisplayNegativeSignumInSplits
-                                     ? signedTransactionBalance.abs() // Display abs value because switch button is visible
-                                     : signedTransactionBalance); // Display signed value because switch button is hidden
+            updateAmountEditText(signedTransactionBalance);
         }
 
         String    currencyCode     = mTransactionsDbAdapter.getAccountCurrencyCode(mAccountUID);
@@ -621,6 +627,33 @@ public class TransactionFormFragment extends Fragment implements
                                                       .isNegative());
 
 
+    }
+
+    private void updateAmountEditText(final Money signedTransactionBalance) {
+
+        // Get Preference about showing signum in Splits
+        boolean shallDisplayNegativeSignumInSplits = PreferenceManager.getDefaultSharedPreferences(getActivity())
+                                                                      .getBoolean(getString(R.string.key_display_negative_signum_in_splits),
+                                                                                  false);
+
+        final boolean isCredit = signedTransactionBalance.isNegative();
+
+        //
+        // Negate balance if account is usually creditor
+        //
+
+        AccountType accountType = GnuCashApplication.getAccountsDbAdapter()
+                                                    .getAccountType(mAccountUID);
+
+        // New signed transaction balance if typeSwitch has changed
+        final Money newSignedTransactionBalance = mTransactionTypeSwitch.isChecked() != isCredit
+                                                  ? signedTransactionBalance.negate()
+                                                  : signedTransactionBalance;
+
+        accountType.displayBalanceWithoutCurrency(mAmountEditText,
+                                                  newSignedTransactionBalance,
+                                                  shallDisplayNegativeSignumInSplits || (mTransactionTypeSwitch.getVisibility()
+                                                                                         == View.GONE));
     }
 
     private void setDoubleEntryViewsVisibility(int visibility) {
@@ -667,14 +700,24 @@ public class TransactionFormFragment extends Fragment implements
 
         mTransactionTypeSwitch.setChecked(transactionType);
 
+        //
+        // Display Transaction Amount and Currency
+        //
+
 		String code = GnuCashApplication.getDefaultCurrencyCode();
 		if (mAccountUID != null){
 			code = mTransactionsDbAdapter.getAccountCurrencyCode(mAccountUID);
 		}
 
 		Commodity commodity = Commodity.getInstance(code);
+
         mCurrencyTextView.setText(commodity.getSymbol());
+
         mAmountEditText.setCommodity(commodity);
+
+        //
+        // Select Transfer Other Account
+        //
 
         if (mUseDoubleEntry){
             String currentAccountUID = mAccountUID;
@@ -683,7 +726,10 @@ public class TransactionFormFragment extends Fragment implements
             do {
                 defaultTransferAccountID = mAccountsDbAdapter.getDefaultTransferAccountID(mAccountsDbAdapter.getID(currentAccountUID));
                 if (defaultTransferAccountID > 0) {
+
+                    // Select Other Account
                     setSelectedTransferAccount(defaultTransferAccountID);
+
                     break; //we found a parent with default transfer setting
                 }
                 currentAccountUID = mAccountsDbAdapter.getParentAccountUID(currentAccountUID);
@@ -779,9 +825,22 @@ public class TransactionFormFragment extends Fragment implements
 	/**
 	 * Sets click listeners for the dialog buttons
 	 */
-	private void setListeners() {
+    private void setListeners() {
 
         mTransactionTypeSwitch.setColorizeOnCheckedChangeListener();
+
+        mTransactionTypeSwitch.addOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView,
+                                         boolean isChecked) {
+
+                // Compute balance signed value of saved transaction
+                final Money signedTransactionBalance = mTransaction.getBalance(mAccountUID);
+
+                // Update Amount Signum
+                updateAmountEditText(signedTransactionBalance);
+            }
+        });
 
 		mDateTextView.setOnClickListener(new View.OnClickListener() {
 
@@ -1013,6 +1072,7 @@ public class TransactionFormFragment extends Fragment implements
 	 * and save a transaction
 	 */
 	private void saveNewTransaction() {
+
         mAmountEditText.getCalculatorKeyboard().hideCustomKeyboard();
 
         //determine whether we need to do currency conversion
@@ -1157,11 +1217,14 @@ public class TransactionFormFragment extends Fragment implements
      * @param splitList List of splits produced in the fragment
      */
     public void setSplitList(List<Split> splitList){
+
         mSplitsList = splitList;
+
         Money balance = Transaction.computeBalance(mAccountUID, mSplitsList);
 
-        mAmountEditText.setValue(balance.asBigDecimal());
         mTransactionTypeSwitch.setChecked(balance.isNegative());
+
+        updateAmountEditText(balance);
     }
 
 
@@ -1254,7 +1317,9 @@ public class TransactionFormFragment extends Fragment implements
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+
         if (resultCode == Activity.RESULT_OK){
+
             List<Split> splitList = data.getParcelableArrayListExtra(UxArgument.SPLIT_LIST);
             setSplitList(splitList);
 
