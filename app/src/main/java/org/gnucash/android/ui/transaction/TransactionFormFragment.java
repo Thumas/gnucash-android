@@ -834,8 +834,11 @@ public class TransactionFormFragment extends Fragment implements
             public void onCheckedChanged(CompoundButton buttonView,
                                          boolean isChecked) {
 
-                // Compute balance signed value of saved transaction
-                final Money signedTransactionBalance = mTransaction.getBalance(mAccountUID);
+                // UI to Transaction
+                Transaction transaction = extractTransactionFromView();
+
+                // Compute balance signed value of transaction
+                final Money signedTransactionBalance = transaction.getBalance(mAccountUID);
 
                 // Update Amount Signum
                 updateAmountEditText(signedTransactionBalance);
@@ -1038,6 +1041,13 @@ public class TransactionFormFragment extends Fragment implements
         transaction.setSplits(splits);
         transaction.setExported(false); //not necessary as exports use timestamps now. Because, legacy
 
+        if (mEditMode) {
+            // Editing an existing transaction
+
+            // reset the transaction UID
+            transaction.setUID(mTransaction.getUID());
+        }
+
         return transaction;
     }
 
@@ -1083,13 +1093,16 @@ public class TransactionFormFragment extends Fragment implements
             return;
         }
 
-        Transaction transaction = extractTransactionFromView();
+        //
+        // UI to Transaction, with same UID if transaction edit mode
+        //
 
-        if (mEditMode) { //if editing an existing transaction
-            transaction.setUID(mTransaction.getUID());
-        }
+        mTransaction = extractTransactionFromView();
 
-        mTransaction = transaction;
+        //
+        // Save transaction in DB
+        //
+
         mAccountsDbAdapter.beginTransaction();
 
         try {
