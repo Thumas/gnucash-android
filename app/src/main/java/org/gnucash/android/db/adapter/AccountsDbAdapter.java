@@ -82,7 +82,7 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
     /**
 	 * Transactions database adapter for manipulating transactions associated with accounts
 	 */
-    private final TransactionsDbAdapter mTransactionsAdapter;
+    private final TransactionsDbAdapter mTransactionsDbAdapter;
 
     /**
      * Commodities database adapter for commodity manipulation
@@ -109,7 +109,7 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
                 AccountEntry.COLUMN_PARENT_ACCOUNT_UID,
                 AccountEntry.COLUMN_DEFAULT_TRANSFER_ACCOUNT_UID
         });
-        mTransactionsAdapter = transactionsDbAdapter;
+        mTransactionsDbAdapter = transactionsDbAdapter;
         mCommoditiesDbAdapter = new CommoditiesDbAdapter(db);
     }
 
@@ -137,7 +137,7 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
                 AccountEntry.COLUMN_DEFAULT_TRANSFER_ACCOUNT_UID
         });
 
-        mTransactionsAdapter = new TransactionsDbAdapter(db, new SplitsDbAdapter(db));
+        mTransactionsDbAdapter = new TransactionsDbAdapter(db, new SplitsDbAdapter(db));
         mCommoditiesDbAdapter = new CommoditiesDbAdapter(db);
     }
 
@@ -158,7 +158,7 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
 	public void addRecord(@NonNull Account account, UpdateMethod updateMethod){
         Log.d(LOG_TAG, "Replace account to db");
         //in-case the account already existed, we want to update the templates based on it as well
-        List<Transaction> templateTransactions = mTransactionsAdapter.getScheduledTransactionsForAccount(account.getUID());
+        List<Transaction> templateTransactions = mTransactionsDbAdapter.getScheduledTransactionsForAccount(account.getUID());
         super.addRecord(account, updateMethod);
         String accountUID = account.getUID();
 		//now add transactions if there are any
@@ -167,10 +167,10 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
             updateRecord(accountUID, AccountEntry.COLUMN_FULL_NAME, getFullyQualifiedAccountName(accountUID));
             for (Transaction t : account.getTransactions()) {
                 t.setCommodity(account.getCommodity());
-		        mTransactionsAdapter.addRecord(t, updateMethod);
+		        mTransactionsDbAdapter.addRecord(t, updateMethod);
 			}
             for (Transaction transaction : templateTransactions) {
-                mTransactionsAdapter.addRecord(transaction, UpdateMethod.update);
+                mTransactionsDbAdapter.addRecord(transaction, UpdateMethod.update);
             }
         }
 	}
@@ -195,12 +195,12 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
         List<Transaction> transactionList = new ArrayList<>(accountList.size()*2);
         for (Account account : accountList) {
             transactionList.addAll(account.getTransactions());
-            transactionList.addAll(mTransactionsAdapter.getScheduledTransactionsForAccount(account.getUID()));
+            transactionList.addAll(mTransactionsDbAdapter.getScheduledTransactionsForAccount(account.getUID()));
         }
         long nRow = super.bulkAddRecords(accountList, updateMethod);
 
         if (nRow > 0 && !transactionList.isEmpty()){
-            mTransactionsAdapter.bulkAddRecords(transactionList, updateMethod);
+            mTransactionsDbAdapter.bulkAddRecords(transactionList, updateMethod);
         }
         return nRow;
     }
@@ -382,7 +382,7 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
         try {
             descendantAccountUIDs.add(accountUID); //add account to descendants list just for convenience
             for (String descendantAccountUID : descendantAccountUIDs) {
-                mTransactionsAdapter.deleteTransactionsForAccount(descendantAccountUID);
+                mTransactionsDbAdapter.deleteTransactionsForAccount(descendantAccountUID);
             }
 
             String accountUIDList = "'" + TextUtils.join("','", descendantAccountUIDs) + "'";
@@ -421,7 +421,7 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
     @Override
     public Account buildModelInstance(@NonNull final Cursor c){
         Account account = buildSimpleAccountInstance(c);
-        account.setTransactions(mTransactionsAdapter.getAllTransactionsForAccount(account.getUID()));
+        account.setTransactions(mTransactionsDbAdapter.getAllTransactionsForAccount(account.getUID()));
 
         return account;
 	}
@@ -848,7 +848,7 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
         String currencyCode = GnuCashApplication.getDefaultCurrencyCode();
 
         Log.d(LOG_TAG, "all account list : " + accountUidList.size());
-        SplitsDbAdapter splitsDbAdapter = mTransactionsAdapter.getSplitDbAdapter();
+        SplitsDbAdapter splitsDbAdapter = mTransactionsDbAdapter.getSplitDbAdapter();
 
         return (startTimestamp == -1 && endTimestamp == -1)
                 ? splitsDbAdapter.computeSplitBalance(accountUidList, currencyCode, hasDebitNormalBalance)
@@ -872,7 +872,7 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
 
     private Money computeBalance(String accountUID, long startTimestamp, long endTimestamp) {
         Log.d(LOG_TAG, "Computing account balance for account ID " + accountUID);
-        String currencyCode = mTransactionsAdapter.getAccountCurrencyCode(accountUID);
+        String currencyCode = mTransactionsDbAdapter.getAccountCurrencyCode(accountUID);
         boolean hasDebitNormalBalance = getAccountType(accountUID).hasDebitNormalBalance();
 
         List<String> accountsList = getDescendantAccountUIDs(accountUID,
@@ -881,7 +881,7 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
         accountsList.add(0, accountUID);
 
         Log.d(LOG_TAG, "all account list : " + accountsList.size());
-        SplitsDbAdapter splitsDbAdapter = mTransactionsAdapter.getSplitDbAdapter();
+        SplitsDbAdapter splitsDbAdapter = mTransactionsDbAdapter.getSplitDbAdapter();
         return (startTimestamp == -1 && endTimestamp == -1)
                 ? splitsDbAdapter.computeSplitBalance(accountsList, currencyCode, hasDebitNormalBalance)
                 : splitsDbAdapter.computeSplitBalance(accountsList, currencyCode, hasDebitNormalBalance, startTimestamp, endTimestamp);
@@ -905,7 +905,7 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
 
         boolean hasDebitNormalBalance = getAccountType(accountUIDList.get(0)).hasDebitNormalBalance();
 
-        SplitsDbAdapter splitsDbAdapter = mTransactionsAdapter.getSplitDbAdapter();
+        SplitsDbAdapter splitsDbAdapter = mTransactionsDbAdapter.getSplitDbAdapter();
         Money splitSum = (startTimestamp == -1 && endTimestamp == -1)
                 ? splitsDbAdapter.computeSplitBalance(accountUIDList, currencyCode, hasDebitNormalBalance)
                 : splitsDbAdapter.computeSplitBalance(accountUIDList, currencyCode, hasDebitNormalBalance, startTimestamp, endTimestamp);
@@ -1198,7 +1198,7 @@ public class AccountsDbAdapter extends DatabaseAdapter<Account> {
         Cursor cursor = fetchAccounts(null, null, null);
         List<Transaction> openingTransactions = new ArrayList<>();
         try {
-            SplitsDbAdapter splitsDbAdapter = mTransactionsAdapter.getSplitDbAdapter();
+            SplitsDbAdapter splitsDbAdapter = mTransactionsDbAdapter.getSplitDbAdapter();
             while (cursor.moveToNext()) {
                 long id = cursor.getLong(cursor.getColumnIndexOrThrow(AccountEntry._ID));
                 String accountUID = getUID(id);
