@@ -456,14 +456,23 @@ public class SplitEditorFragment extends Fragment {
                 public void onCheckedChanged(CompoundButton buttonView,
                                              boolean isChecked) {
 
-                    // Change Transaction Type according to splitTypeSwitch
-                    split.setType(splitTypeSwitch.getTransactionType());
+                    if (split != null) {
+                        // Split not null
 
-                    // Update Split Amount Signum
-                    updateSplitAmountEditText(split);
+                        // Change Transaction Type according to splitTypeSwitch
+                        split.setType(splitTypeSwitch.getTransactionType());
 
-                    // Recompute Split List Balance
-                    mImbalanceWatcher.afterTextChanged(null);
+                        // Update Split Amount Signum
+                        updateSplitAmountEditText(split);
+
+                        // Recompute Split List Balance
+                        mImbalanceWatcher.afterTextChanged(null);
+
+                    } else {
+                        // Split is null
+
+                        // RAF
+                    }
                 }
             });
         }
@@ -544,7 +553,8 @@ public class SplitEditorFragment extends Fragment {
             // Display abs value because switch button is visible
             accountType.displayBalanceWithoutCurrency(splitAmountEditText,
                                                       splitValueWithSignum,
-                                                      shallDisplayNegativeSignumInSplits);
+                                                      shallDisplayNegativeSignumInSplits,
+                                                      false);
         }
 
         /**

@@ -84,6 +84,7 @@ public class TransactionDetailActivity extends PasscodeLockActivity {
             accountType.displayBalance(balanceView,
                                        splitSignedAmount,
                                        false,
+                                       true,
                                        true);
         }
 
@@ -239,6 +240,7 @@ public class TransactionDetailActivity extends PasscodeLockActivity {
 
         accountType.displayBalance(balanceTextView,
                                    accountBalance,
+                                   true,
                                    true,
                                    true);
 

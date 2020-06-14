@@ -514,10 +514,9 @@ public class TransactionFormFragment extends Fragment implements
                     if (!amountEntered) {
                         // user already entered an amount
 
-                        // TODO TW C 2020-05-23 : Il faudrait homogénéïser en appelant updateAmountEditText ?
-                        mAmountEditText.setValue(splitList.get(0)
-                                                          .getValue()
-                                                          .asBigDecimal());
+                        final Money firstSplitAmount = splitList.get(0)
+                                                                .getValue();
+                        updateAmountEditText(firstSplitAmount);
                     }
 
                 } else {
@@ -566,7 +565,7 @@ public class TransactionFormFragment extends Fragment implements
 
         final boolean isSimpleSplit = mSplitsList.size() <= 2;
 
-        toggleAmountInputEntryMode(isSimpleSplit);
+        setAllowAmountEdit(isSimpleSplit);
 
         if (mSplitsList.size() == 2){
             for (Split split : mSplitsList) {
@@ -650,10 +649,12 @@ public class TransactionFormFragment extends Fragment implements
                                                   ? signedTransactionBalance.negate()
                                                   : signedTransactionBalance;
 
+        final boolean isTransactionTypeSwitchVisible = mTransactionTypeSwitch.getVisibility() != View.GONE;
+
         accountType.displayBalanceWithoutCurrency(mAmountEditText,
                                                   newSignedTransactionBalance,
-                                                  shallDisplayNegativeSignumInSplits || (mTransactionTypeSwitch.getVisibility()
-                                                                                         == View.GONE));
+                                                  shallDisplayNegativeSignumInSplits || !isTransactionTypeSwitchVisible,
+                                                  !isTransactionTypeSwitchVisible);
     }
 
     private void setDoubleEntryViewsVisibility(int visibility) {
@@ -661,15 +662,25 @@ public class TransactionFormFragment extends Fragment implements
         mTransactionTypeSwitch.setVisibility(visibility);
     }
 
-    private void toggleAmountInputEntryMode(boolean enabled){
-        if (enabled){
+    private void setAllowAmountEdit(boolean isAmountEditAllowed){
+
+        if (isAmountEditAllowed){
+            // Amount is allowed to be edited using keyboard
+
             mAmountEditText.setFocusable(true);
+
+            // Use Keyboard to edit amount
             mAmountEditText.bindListeners(mKeyboardView);
+
         } else {
+            // Amount is not allowed to be edited, but can be clicked to open SplitEditor
+
             mAmountEditText.setFocusable(false);
+
             mAmountEditText.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+
                     openSplitEditor();
                 }
             });
@@ -767,59 +778,51 @@ public class TransactionFormFragment extends Fragment implements
      */
     private void openSplitEditor() {
 
-        if (mAmountEditText.getValue() == null) {
+        String baseAmountString;
 
-            Toast.makeText(getActivity(),
-                           R.string.toast_enter_amount_to_split,
-                           Toast.LENGTH_SHORT)
-                 .show();
+        if (mTransaction == null) {
+            // we are creating a new transaction (not editing an existing one)
+
+            BigDecimal enteredAmount = mAmountEditText.getValue() != null
+                                       ? mAmountEditText.getValue()
+                                       : new BigDecimal(0);
+
+            baseAmountString = enteredAmount.toPlainString();
 
         } else {
+            // we are editing an existing transaction
 
-            String baseAmountString;
+            //
+            // Find splits biggest amount (in absolute value)
+            //
 
-            if (mTransaction == null) {
-                // we are creating a new transaction (not editing an existing one)
+            Money biggestAmount = Money.createZeroInstance(mTransaction.getCurrencyCode());
 
-                BigDecimal enteredAmount = mAmountEditText.getValue();
+            for (Split split : mTransaction.getSplits()) {
+                if (split.getValue()
+                         .asBigDecimal()
+                         .compareTo(biggestAmount.asBigDecimal()) > 0) {
+                    biggestAmount = split.getValue();
+                }
+            } // for
 
-                baseAmountString = enteredAmount.toPlainString();
-
-            } else {
-                // we are editing an existing transaction
-
-                //
-                // Find splits biggest amount (in absolute value)
-                //
-
-                Money biggestAmount = Money.createZeroInstance(mTransaction.getCurrencyCode());
-
-                for (Split split : mTransaction.getSplits()) {
-                    if (split.getValue()
-                             .asBigDecimal()
-                             .compareTo(biggestAmount.asBigDecimal()) > 0) {
-                        biggestAmount = split.getValue();
-                    }
-                } // for
-
-                baseAmountString = biggestAmount.toPlainString();
-            }
-
-            Intent intent = new Intent(getActivity(),
-                                       FormActivity.class);
-            intent.putExtra(UxArgument.FORM_TYPE,
-                            FormActivity.FormType.SPLIT_EDITOR.name());
-            intent.putExtra(UxArgument.SELECTED_ACCOUNT_UID,
-                            mAccountUID);
-            intent.putExtra(UxArgument.AMOUNT_STRING,
-                            baseAmountString);
-
-            intent.putParcelableArrayListExtra(UxArgument.SPLIT_LIST,
-                                               (ArrayList<Split>) extractSplitsFromView());
-
-            startActivityForResult(intent,
-                                   REQUEST_SPLIT_EDITOR);
+            baseAmountString = biggestAmount.toPlainString();
         }
+
+        Intent intent = new Intent(getActivity(),
+                                   FormActivity.class);
+        intent.putExtra(UxArgument.FORM_TYPE,
+                        FormActivity.FormType.SPLIT_EDITOR.name());
+        intent.putExtra(UxArgument.SELECTED_ACCOUNT_UID,
+                        mAccountUID);
+        intent.putExtra(UxArgument.AMOUNT_STRING,
+                        baseAmountString);
+
+        intent.putParcelableArrayListExtra(UxArgument.SPLIT_LIST,
+                                           (ArrayList<Split>) extractSplitsFromView());
+
+        startActivityForResult(intent,
+                               REQUEST_SPLIT_EDITOR);
     }
 
 	/**
@@ -922,18 +925,6 @@ public class TransactionFormFragment extends Fragment implements
         }
 
         BigDecimal amountBigD = mAmountEditText.getValue();
-
-        if (amountBigD != null) {
-            // Amount is null
-
-            // RAF
-
-        } else {
-            // Amount is not null
-
-            // init to 0
-            amountBigD=new BigDecimal(0);
-        }
 
         String baseCurrencyCode = mTransactionsDbAdapter.getAccountCurrencyCode(mAccountUID);
 
@@ -1344,14 +1335,22 @@ public class TransactionFormFragment extends Fragment implements
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         if (resultCode == Activity.RESULT_OK){
+            // Splits have been saved => Use
 
+            // Once split editor has been used and saved, only allow editing through it
+
+            // Do not allow keyboard anymore to edit amount
+            setAllowAmountEdit(false);
+
+            // Display Split Editor button
+            mOpenSplitEditor.setVisibility(View.VISIBLE);
+
+            // Hide double Entry
+            setDoubleEntryViewsVisibility(View.GONE);
+
+            // Set Split list from intent data coming from Split Editor
             List<Split> splitList = data.getParcelableArrayListExtra(UxArgument.SPLIT_LIST);
             setSplitList(splitList);
-
-            //once split editor has been used and saved, only allow editing through it
-            toggleAmountInputEntryMode(false);
-            setDoubleEntryViewsVisibility(View.GONE);
-            mOpenSplitEditor.setVisibility(View.VISIBLE);
         }
     }
 }

@@ -1,6 +1,5 @@
 package org.gnucash.android.model;
 
-import android.content.Context;
 import android.support.annotation.ColorInt;
 import android.support.annotation.ColorRes;
 import android.widget.TextView;
@@ -9,7 +8,6 @@ import org.gnucash.android.R;
 import org.gnucash.android.app.GnuCashApplication;
 import org.gnucash.android.ui.settings.PreferenceActivity;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -117,10 +115,16 @@ public enum AccountType {
      *
      * @param balanceTextView {@link android.widget.TextView} where balance is to be displayed
      * @param balance {@link org.gnucash.android.model.Money} balance (>0 or <0) to display
+     * @param shallDisplayNegativeSignum if true will display Negative signum (often bind to Preference R.string.key_display_negative_signum_in_splits
+     * @param shallDisplayZero if true will display 0, else will display nothing (usefull when first creation of a Transaction)
+     * @param shallDisplayCurrency if true will display Currency as well as amount (usefull when displaying balance in
+     *                             TransactionListFragment, BalanceSheetFragment...)
+     *                             else will not display Currency (usefull in SplitEditorFragment or TransactionFormFragment)
      */
     public void displayBalance(final TextView balanceTextView,
                                final Money balance,
                                final boolean shallDisplayNegativeSignum,
+                               final boolean shallDisplayZero,
                                final boolean shallDisplayCurrency) {
 
         //
@@ -141,11 +145,23 @@ public enum AccountType {
         } else {
             // Shall not display currency
 
-            // Display value without currency and without decimals
-            balanceTextView.setText(!shallDisplayNegativeSignum
-                                    ? balanceToDisplay.abs()
-                                                      .toShortString()
-                                    : balanceToDisplay.toShortString());
+            // Shall display value in all other cases than zero balance and shall not display zero balance
+            final boolean shallDisplayValue = !(balanceToDisplay.isAmountZero() && !shallDisplayZero);
+
+            if (shallDisplayValue) {
+                // Shall display balance
+
+                // Display value without currency and without decimals
+                balanceTextView.setText(!shallDisplayNegativeSignum
+                                        ? balanceToDisplay.abs()
+                                                          .toShortString()
+                                        : balanceToDisplay.toShortString());
+
+            } else {
+                // Shall not display balance
+
+                balanceTextView.setText("");
+            }
         }
 
         //
@@ -154,22 +170,9 @@ public enum AccountType {
 
         @ColorInt int fontColor;
 
-        if (balance.asBigDecimal()
-                   .compareTo(BigDecimal.ZERO) == 0) {
-            // balance is null
+        final boolean isCreditBalance = balance.isNegative();
 
-            Context context = GnuCashApplication.getAppContext();
-
-            fontColor = context.getResources()
-                               .getColor(android.R.color.black);
-
-        } else {
-            // balance is not null
-
-            final boolean isCreditBalance = balance.isNegative();
-
-            fontColor = getAmountColor(isCreditBalance);
-        }
+        fontColor = getAmountColor(isCreditBalance);
 
         balanceTextView.setTextColor(fontColor);
     }
@@ -188,6 +191,7 @@ public enum AccountType {
         displayBalance(balanceTextView,
                        balance,
                        true,
+                       true,
                        true);
     }
 
@@ -201,11 +205,13 @@ public enum AccountType {
      */
     public void displayBalanceWithoutCurrency(final TextView transactionBalanceTextView,
                                               final Money transactionBalance,
-                                              final boolean shallDisplayNegativeSignumInSplits) {
+                                              final boolean shallDisplayNegativeSignumInSplits,
+                                              final boolean shallDisplayZero) {
 
         displayBalance(transactionBalanceTextView,
                        transactionBalance,
                        shallDisplayNegativeSignumInSplits,
+                       shallDisplayZero,
                        false);
     }
     /**
