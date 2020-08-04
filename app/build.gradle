@@ -210,7 +210,8 @@ dependencies {
                    'net.objecthunter:exp4j:0.4.7',
                    'org.apache.jackrabbit:jackrabbit-webdav:2.13.3',
                    'com.dropbox.core:dropbox-core-sdk:3.0.3',
-                   'com.android.support:multidex:1.0.1'
+                   'com.android.support:multidex:1.0.1',
+                   'com.getbase:floatingactionbutton:1.10.1'
     )
 
     debugImplementation 'com.facebook.stetho:stetho:1.5.0'

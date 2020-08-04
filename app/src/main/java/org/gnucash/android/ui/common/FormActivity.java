@@ -35,6 +35,7 @@ import org.gnucash.android.ui.budget.BudgetAmountEditorFragment;
 import org.gnucash.android.ui.budget.BudgetFormFragment;
 import org.gnucash.android.ui.export.ExportFormFragment;
 import org.gnucash.android.ui.passcode.PasscodeLockActivity;
+import org.gnucash.android.ui.transaction.FreeTransactionFormFragment;
 import org.gnucash.android.ui.transaction.SplitEditorFragment;
 import org.gnucash.android.ui.transaction.TransactionFormFragment;
 import org.gnucash.android.ui.util.widget.CalculatorKeyboard;
@@ -52,7 +53,7 @@ public class FormActivity extends PasscodeLockActivity {
 
     private CalculatorKeyboard mOnBackListener;
 
-    public enum FormType {ACCOUNT, TRANSACTION, EXPORT, SPLIT_EDITOR, BUDGET, BUDGET_AMOUNT_EDITOR}
+    public enum FormType {ACCOUNT, TRANSACTION, FREE_TRANSACTION, EXPORT, SPLIT_EDITOR, BUDGET, BUDGET_AMOUNT_EDITOR}
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +96,10 @@ public class FormActivity extends PasscodeLockActivity {
 
             case TRANSACTION:
                 showTransactionFormFragment(intent.getExtras());
+                break;
+
+            case FREE_TRANSACTION:
+                showFreeTransactionFormFragment(intent.getExtras());
                 break;
 
             case EXPORT:
@@ -161,6 +166,16 @@ public class FormActivity extends PasscodeLockActivity {
         TransactionFormFragment transactionFormFragment = new TransactionFormFragment();
         transactionFormFragment.setArguments(args);
         showFormFragment(transactionFormFragment);
+    }
+
+    /** Loads the free transaction insert fragment (no transfer from account set) and passes the
+     * arguments
+     * @param args Bundle arguments to be passed to the fragment
+    */
+    private void showFreeTransactionFormFragment(Bundle args) {
+    TransactionFormFragment transactionFormFragment = new TransactionFormFragment();
+    transactionFormFragment.setArguments(args);
+    showFormFragment(transactionFormFragment);
     }
 
     /**

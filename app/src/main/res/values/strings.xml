@@ -96,7 +96,7 @@
 	<string name="title_account_preferences">Account Preferences</string>
 	<string name="title_default_transaction_type">Default Transaction Type</string>
 	<string name="summary_default_transaction_type">@string/label_credit</string>
-    <string name="label_use_account_usual_balance_expense_mode">Use Account usual Balance (Exept for Assets)</string>
+    <string name="label_use_account_usual_balance_expense_mode">Use Account usual Balance (Except for Assets)</string>
     <string name="label_use_account_usual_balance_income_mode">Use Account usual Balance</string>
 	<string-array name="transaction_types">
         <item>@string/label_use_account_usual_balance_expense_mode</item>
@@ -523,4 +523,8 @@
     <string name="prefs_ui_title_use_color_in_account_list">Use colors in Account Lists</string>
     <string name="prefs_ui_summary_use_color_in_account_list">Use colors in Account Lists and in Transaction Lists</string>
 
+    <string name="new_account">New account</string>
+    <string name="new_transaction">New transaction</string>
+
+    <string name="toast_specify_source_account_to_save_transaction">Create and specify a source account to save the transaction</string>
 </resources>

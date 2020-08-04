@@ -53,6 +53,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
+import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.kobakei.ratethisapp.RateThisApp;
 
 import org.gnucash.android.BuildConfig;
@@ -161,8 +162,8 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
      */
     @BindView(R.id.pager)
             ViewPager mViewPager;
-    @BindView(R.id.fab_create_account)
-    FloatingActionButton mFloatingActionButton;
+    @BindView(R.id.fab_create_content_menu)
+    FloatingActionsMenu mFloatingActionsMenu;
     @BindView(R.id.coordinatorLayout)
     CoordinatorLayout mCoordinatorLayout;
 
@@ -294,7 +295,7 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
 
         setCurrentTab();
 
-        mFloatingActionButton.setOnClickListener(new View.OnClickListener() {
+        /*mFloatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent addAccountIntent = new Intent(AccountsActivity.this, FormActivity.class);
@@ -302,7 +303,8 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
                 addAccountIntent.putExtra(UxArgument.FORM_TYPE, FormActivity.FormType.ACCOUNT.name());
                 startActivityForResult(addAccountIntent, AccountsActivity.REQUEST_EDIT_ACCOUNT);
             }
-        });
+        });*/
+        configureFloatingActionsMenu();
 
         // Prepare a Toast message
         mToast = Toast.makeText(getApplicationContext(),
@@ -460,8 +462,11 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
             // Close the main navigation menu
             super.onBackPressed();
 
+        } else if (mFloatingActionsMenu != null && mFloatingActionsMenu.isExpanded()) {
+            // the main navigation menu is closed, but the floating action button menu is open
+            mFloatingActionsMenu.collapse();
         } else {
-            // The main navigation menu is closed
+            // The main navigation menu and the floating action button menu are closed
 
             // Get Preference about double back button press to exit
             boolean prefShallUseDoubleBackPressToExit = PreferenceManager.getDefaultSharedPreferences(this)
@@ -689,4 +694,24 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
 		editor.commit();
 	}
 
+	private void configureFloatingActionsMenu() {
+        final FloatingActionButton createAccountButton = findViewById(R.id.fab_create_account);
+        final FloatingActionButton createTransaction = findViewById(R.id.fab_create_transaction);
+
+        createAccountButton.setOnClickListener(view -> {
+            mFloatingActionsMenu.collapse();
+            Intent addAccountIntent = new Intent(AccountsActivity.this, FormActivity.class);
+            addAccountIntent.setAction(Intent.ACTION_INSERT_OR_EDIT);
+            addAccountIntent.putExtra(UxArgument.FORM_TYPE, FormActivity.FormType.ACCOUNT.name());
+            startActivityForResult(addAccountIntent, AccountsActivity.REQUEST_EDIT_ACCOUNT);
+        });
+
+        createTransaction.setOnClickListener(view -> {
+            mFloatingActionsMenu.collapse();
+            Intent addTransactionIntent = new Intent(AccountsActivity.this, FormActivity.class);
+            addTransactionIntent.setAction(Intent.ACTION_INSERT_OR_EDIT);
+            addTransactionIntent.putExtra(UxArgument.FORM_TYPE, FormActivity.FormType.FREE_TRANSACTION.name());
+            startActivityForResult(addTransactionIntent, AccountsActivity.REQUEST_EDIT_ACCOUNT);
+        });
+    }
 }

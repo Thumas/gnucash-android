@@ -18,6 +18,7 @@
 <android.support.v4.widget.DrawerLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:fab="http://schemas.android.com/apk/res-auto"
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -52,7 +53,7 @@
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
-        <android.support.design.widget.FloatingActionButton
+        <!--android.support.design.widget.FloatingActionButton
             android:id="@+id/fab_create_account"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -62,7 +63,43 @@
             android:layout_alignParentEnd="true"
             android:layout_margin="20dp"
             app:elevation="10dp"
-            android:src="@drawable/ic_add_white_48dp"/>
+            android:src="@drawable/ic_add_white_48dp"/-->
+
+        <com.getbase.floatingactionbutton.FloatingActionsMenu
+            android:id="@+id/fab_create_content_menu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:layout_marginStart="20dp"
+            fab:fab_addButtonColorNormal="@color/white"
+            fab:fab_addButtonColorPressed="@color/white_pressed"
+            fab:fab_icon="@drawable/ic_add_white_48dp"
+            fab:fab_labelStyle="@style/menu_labels_style"
+            fab:fab_labelsPosition="right">
+
+            <com.getbase.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_create_account"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/new_account"
+                fab:fab_colorNormal="@color/white"
+                fab:fab_icon="@drawable/ic_account_24px"
+                fab:fab_title="@string/new_account"
+                fab:fab_size="mini"
+                fab:fab_colorPressed="@color/white_pressed"/>
+
+            <com.getbase.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_create_transaction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/new_transaction"
+                fab:fab_colorNormal="@color/white"
+                fab:fab_icon="@drawable/money_24px"
+                fab:fab_title="@string/new_transaction"
+                fab:fab_size="mini"
+                fab:fab_colorPressed="@color/white_pressed"/>
+
+        </com.getbase.floatingactionbutton.FloatingActionsMenu>
 
     </android.support.design.widget.CoordinatorLayout>
 
