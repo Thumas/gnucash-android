@@ -83,10 +83,10 @@
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/new_account"
                 fab:fab_colorNormal="?attr/fab_normal"
+                fab:fab_colorPressed="?attr/fab_pressed"
                 fab:fab_icon="@drawable/ic_account_24px"
                 fab:fab_title="@string/new_account"
-                fab:fab_size="mini"
-                fab:fab_colorPressed="@color/white_pressed"/>
+                fab:fab_size="mini"/>
 
             <com.getbase.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fab_create_transaction"
@@ -94,10 +94,10 @@
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/new_transaction"
                 fab:fab_colorNormal="?attr/fab_normal"
+                fab:fab_colorPressed="?attr/fab_pressed"
                 fab:fab_icon="@drawable/money_24px"
                 fab:fab_title="@string/new_transaction"
-                fab:fab_size="mini"
-                fab:fab_colorPressed="@color/white_pressed"/>
+                fab:fab_size="mini"/>
 
         </com.getbase.floatingactionbutton.FloatingActionsMenu>
 
