@@ -295,15 +295,6 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
 
         setCurrentTab();
 
-        /*mFloatingActionButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent addAccountIntent = new Intent(AccountsActivity.this, FormActivity.class);
-                addAccountIntent.setAction(Intent.ACTION_INSERT_OR_EDIT);
-                addAccountIntent.putExtra(UxArgument.FORM_TYPE, FormActivity.FormType.ACCOUNT.name());
-                startActivityForResult(addAccountIntent, AccountsActivity.REQUEST_EDIT_ACCOUNT);
-            }
-        });*/
         configureFloatingActionsMenu();
 
         // Prepare a Toast message
@@ -676,6 +667,8 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
 
     @Override
 	public void accountSelected(String accountUID) {
+        collapseFloatingActionsMenu();
+
 		Intent intent = new Intent(this, TransactionsActivity.class);
 		intent.setAction(Intent.ACTION_VIEW);
 		intent.putExtra(UxArgument.SELECTED_ACCOUNT_UID, accountUID);
@@ -699,7 +692,8 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
         final FloatingActionButton createTransaction = findViewById(R.id.fab_create_transaction);
 
         createAccountButton.setOnClickListener(view -> {
-            mFloatingActionsMenu.collapse();
+            collapseFloatingActionsMenu();
+
             Intent addAccountIntent = new Intent(AccountsActivity.this, FormActivity.class);
             addAccountIntent.setAction(Intent.ACTION_INSERT_OR_EDIT);
             addAccountIntent.putExtra(UxArgument.FORM_TYPE, FormActivity.FormType.ACCOUNT.name());
@@ -707,11 +701,18 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
         });
 
         createTransaction.setOnClickListener(view -> {
-            mFloatingActionsMenu.collapse();
+            collapseFloatingActionsMenu();
+
             Intent createTransactionIntent = new Intent(this.getApplicationContext(), FormActivity.class);
             createTransactionIntent.setAction(Intent.ACTION_INSERT_OR_EDIT);
             createTransactionIntent.putExtra(UxArgument.FORM_TYPE, FormActivity.FormType.FREE_TRANSACTION.name());
             startActivity(createTransactionIntent);
         });
+    }
+
+    private void collapseFloatingActionsMenu() {
+        if (mFloatingActionsMenu != null && mFloatingActionsMenu.isExpanded()) {
+            mFloatingActionsMenu.collapse();
+        }
     }
 }
