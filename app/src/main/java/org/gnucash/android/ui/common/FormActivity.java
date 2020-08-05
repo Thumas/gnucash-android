@@ -173,9 +173,9 @@ public class FormActivity extends PasscodeLockActivity {
      * @param args Bundle arguments to be passed to the fragment
     */
     private void showFreeTransactionFormFragment(Bundle args) {
-    TransactionFormFragment transactionFormFragment = new TransactionFormFragment();
-    transactionFormFragment.setArguments(args);
-    showFormFragment(transactionFormFragment);
+        FreeTransactionFormFragment freeTransactionFormFragment = new FreeTransactionFormFragment();
+        freeTransactionFormFragment.setArguments(args);
+        showFormFragment(freeTransactionFormFragment);
     }
 
     /**

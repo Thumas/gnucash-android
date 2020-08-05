@@ -162,7 +162,7 @@ public class FreeTransactionFormFragment extends Fragment implements
     /**
      * Button for setting the transaction type, either credit or debit
      */
-    @BindView(R.id.input_transaction_type) TransactionTypeSwitch mTransactionTypeSwitch;
+    @BindView(R.id.input_free_transaction_type) TransactionTypeSwitch mTransactionTypeSwitch;
 
 	/**
 	 * Input field for the transaction name (description)
@@ -307,6 +307,8 @@ public class FreeTransactionFormFragment extends Fragment implements
             mDoubleEntryAccountTwoLayout.setVisibility(View.GONE);
             mOpenSplitEditor.setVisibility(View.GONE);
         }
+
+        mAccountsDbAdapter = AccountsDbAdapter.getInstance();
 
         String transactionUID = getArguments().getString(UxArgument.SELECTED_TRANSACTION_UID);
         mTransactionsDbAdapter = TransactionsDbAdapter.getInstance();
@@ -857,7 +859,7 @@ public class FreeTransactionFormFragment extends Fragment implements
                 null);
 
         mSourceAccountCursorAdapter = new QualifiedAccountNameCursorAdapter(getActivity(),
-                mTransferAccountCursor,
+                mSourceAccountCursor,
                 where,
                 null,
                 R.layout.account_spinner_dropdown_item);

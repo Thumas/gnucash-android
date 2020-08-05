@@ -32,7 +32,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.CoordinatorLayout;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -53,6 +52,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
+import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.kobakei.ratethisapp.RateThisApp;
 
@@ -708,10 +708,10 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
 
         createTransaction.setOnClickListener(view -> {
             mFloatingActionsMenu.collapse();
-            Intent addTransactionIntent = new Intent(AccountsActivity.this, FormActivity.class);
-            addTransactionIntent.setAction(Intent.ACTION_INSERT_OR_EDIT);
-            addTransactionIntent.putExtra(UxArgument.FORM_TYPE, FormActivity.FormType.FREE_TRANSACTION.name());
-            startActivityForResult(addTransactionIntent, AccountsActivity.REQUEST_EDIT_ACCOUNT);
+            Intent createTransactionIntent = new Intent(this.getApplicationContext(), FormActivity.class);
+            createTransactionIntent.setAction(Intent.ACTION_INSERT_OR_EDIT);
+            createTransactionIntent.putExtra(UxArgument.FORM_TYPE, FormActivity.FormType.FREE_TRANSACTION.name());
+            startActivity(createTransactionIntent);
         });
     }
 }
