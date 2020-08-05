@@ -398,6 +398,12 @@ public class FreeTransactionFormFragment extends Fragment implements
 
                 // reset transaction name autocompletion
                 initTransactionNameAutocomplete();
+
+                // the transaction type switch, the commodity and the transfer account list depend
+                // on the chosen source account
+                resetTransactionTypeSwitch();
+                resetCommodity();
+                updateTransferAccountsList();
             }
 
             @Override
@@ -716,11 +722,26 @@ public class FreeTransactionFormFragment extends Fragment implements
 
         mTransactionTypeSwitch.setViewsToColorize(mAmountEditText,
                                                   mCurrencyTextView);
-        mTransactionTypeSwitch.setAccountType(getSourceAccountType());
-        mTransactionTypeSwitch.setChecked(mTransaction.getBalance(getSourceAccountUID())
-                                                      .isNegative());
+        resetTransactionTypeSwitch();
+    }
 
+    private void resetTransactionTypeSwitch() {
+        final AccountType sourceAccountType = getSourceAccountType();
+        mTransactionTypeSwitch.setAccountType(sourceAccountType);
 
+        // if we have a transaction, use the balance to determine the state of the switch
+        if (mTransaction != null) {
+            mTransactionTypeSwitch.setChecked(mTransaction.getBalance(getSourceAccountUID())
+                    .isNegative());
+        } else {
+            //
+            // According to the Default Transaction Type Preference and the AccountType
+            // Check or Uncheck the TransactionTypeSwitch
+            //
+            final TransactionType transactionType = sourceAccountType.getDefaultTransactionType();
+
+            mTransactionTypeSwitch.setChecked(transactionType);
+        }
     }
 
     private void updateAmountEditText(final Money signedTransactionBalance) {
@@ -792,40 +813,18 @@ public class FreeTransactionFormFragment extends Fragment implements
 
         mTransactionTypeSwitch.setViewsToColorize(mAmountEditText,
                                                   mCurrencyTextView);
-
-        AccountType sourceAccountType = getSourceAccountType();
-        mTransactionTypeSwitch.setAccountType(sourceAccountType);
-
-        //
-        // According to the Default Transaction Type Preference and the AccountType
-        // Check or Uncheck the TransactionTypeSwitch
-        //
-
-        final TransactionType transactionType = sourceAccountType.getDefaultTransactionType();
-
-        mTransactionTypeSwitch.setChecked(transactionType);
+        resetTransactionTypeSwitch();
 
         //
         // Display Transaction Amount and Currency
         //
-
-		String code = GnuCashApplication.getDefaultCurrencyCode();
-		String sourceAccountUID = getSourceAccountUID();
-		if (sourceAccountUID != null){
-			code = mTransactionsDbAdapter.getAccountCurrencyCode(sourceAccountUID);
-		}
-
-		Commodity commodity = Commodity.getInstance(code);
-
-        mCurrencyTextView.setText(commodity.getSymbol());
-
-        mAmountEditText.setCommodity(commodity);
+		resetCommodity();
 
         //
         // Select Transfer Other Account
         //
         if (mUseDoubleEntry) {
-            String currentAccountUID = sourceAccountUID;
+            String currentAccountUID = getSourceAccountUID();;
             long defaultTransferAccountID;
             String rootAccountUID = mAccountsDbAdapter.getOrCreateGnuCashRootAccountUID();
             do {
@@ -841,6 +840,23 @@ public class FreeTransactionFormFragment extends Fragment implements
             } while (!currentAccountUID.equals(rootAccountUID));
         }
 	}
+
+    /**
+     * Resets the displayed commodity according to the chosen source account.
+     */
+	private void resetCommodity() {
+        String code = GnuCashApplication.getDefaultCurrencyCode();
+        final String sourceAccountUID = getSourceAccountUID();
+        if (sourceAccountUID != null){
+            code = mTransactionsDbAdapter.getAccountCurrencyCode(sourceAccountUID);
+        }
+
+        Commodity commodity = Commodity.getInstance(code);
+
+        mCurrencyTextView.setText(commodity.getSymbol());
+
+        mAmountEditText.setCommodity(commodity);
+    }
 
     /**
      * Updates the list of possible source accounts.
@@ -1054,14 +1070,14 @@ public class FreeTransactionFormFragment extends Fragment implements
             return mSplitsList;
         }
 
-        BigDecimal amountBigD = mAmountEditText.getValue();
+        final BigDecimal amountBigD = mAmountEditText.getValue();
 
         final String sourceAccountUID = getSourceAccountUID();
 
-        String baseCurrencyCode = mTransactionsDbAdapter.getAccountCurrencyCode(sourceAccountUID);
+        final String baseCurrencyCode = mTransactionsDbAdapter.getAccountCurrencyCode(sourceAccountUID);
 
         // Store signed amount
-        Money value = new Money(amountBigD,
+        final Money value = new Money(amountBigD,
                                 Commodity.getInstance(baseCurrencyCode));
 
         Money quantity = new Money(value);
