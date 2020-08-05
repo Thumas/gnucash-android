@@ -23,4 +23,8 @@
         <attr name="hintText" format="string"/>
     </declare-styleable>
 
+    <!-- FAB -->
+    <attr name="fab_normal" format="color"/>
+    <attr name="fab_pressed" format="color"/>
+    <attr name="fab_labelsTextColor" format="color"/>
 </resources>

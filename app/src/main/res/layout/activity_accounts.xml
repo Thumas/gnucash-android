@@ -70,19 +70,19 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end|bottom"
-            android:layout_marginStart="20dp"
-            fab:fab_addButtonColorNormal="@color/white"
-            fab:fab_addButtonColorPressed="@color/white_pressed"
+            android:layout_margin="16dp"
+            fab:fab_addButtonColorNormal="?attr/fab_normal"
+            fab:fab_addButtonColorPressed="?attr/fab_pressed"
             fab:fab_icon="@drawable/ic_add_white_48dp"
             fab:fab_labelStyle="@style/menu_labels_style"
-            fab:fab_labelsPosition="right">
+            fab:fab_labelsPosition="left">
 
             <com.getbase.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fab_create_account"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/new_account"
-                fab:fab_colorNormal="@color/white"
+                fab:fab_colorNormal="?attr/fab_normal"
                 fab:fab_icon="@drawable/ic_account_24px"
                 fab:fab_title="@string/new_account"
                 fab:fab_size="mini"
@@ -93,7 +93,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/new_transaction"
-                fab:fab_colorNormal="@color/white"
+                fab:fab_colorNormal="?attr/fab_normal"
                 fab:fab_icon="@drawable/money_24px"
                 fab:fab_title="@string/new_transaction"
                 fab:fab_size="mini"
