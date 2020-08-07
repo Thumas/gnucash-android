@@ -154,8 +154,8 @@ public enum AccountType {
                 // Display value without currency and without decimals
                 balanceTextView.setText(!shallDisplayNegativeSignum
                                         ? balanceToDisplay.abs()
-                                                          .toShortString()
-                                        : balanceToDisplay.toShortString());
+                                                          .toLocaleString()
+                                        : balanceToDisplay.toLocaleString());
 
             } else {
                 // Shall not display balance
