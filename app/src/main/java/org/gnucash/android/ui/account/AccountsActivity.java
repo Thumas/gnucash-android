@@ -190,16 +190,16 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
 
                 switch (i) {
                     case INDEX_RECENT_ACCOUNTS_FRAGMENT:
-                        currentFragment = AccountsListFragment.newInstance(AccountsListFragment.DisplayMode.RECENT);
+                        currentFragment = AccountsListFragment.newInstance(this, AccountsListFragment.DisplayMode.RECENT);
                         break;
 
                     case INDEX_FAVORITE_ACCOUNTS_FRAGMENT:
-                        currentFragment = AccountsListFragment.newInstance(AccountsListFragment.DisplayMode.FAVORITES);
+                        currentFragment = AccountsListFragment.newInstance(this, AccountsListFragment.DisplayMode.FAVORITES);
                         break;
 
                     case INDEX_TOP_LEVEL_ACCOUNTS_FRAGMENT:
                     default:
-                        currentFragment = AccountsListFragment.newInstance(AccountsListFragment.DisplayMode.TOP_LEVEL);
+                        currentFragment = AccountsListFragment.newInstance(this, AccountsListFragment.DisplayMode.TOP_LEVEL);
                         break;
                 }
 
@@ -234,6 +234,11 @@ public class AccountsActivity extends BaseDrawerActivity implements OnAccountCli
         @Override
         public int getCount() {
             return DEFAULT_NUM_PAGES;
+        }
+
+        @Override
+        public int getItemPosition(Object object){
+            return POSITION_NONE;
         }
     }
 

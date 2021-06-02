@@ -25,9 +25,9 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.Loader;
 import android.support.v4.view.MenuItemCompat;
@@ -85,6 +85,7 @@ public class AccountsListFragment extends Fragment implements
     AccountRecyclerAdapter mAccountRecyclerAdapter;
     @BindView(R.id.account_recycler_view)  EmptyRecyclerView mRecyclerView;
     @BindView(R.id.empty_view) TextView mEmptyTextView;
+    private FragmentPagerAdapter accountViewPagerAdapter;
 
     /**
      * Describes the kinds of accounts that should be loaded in the accounts list.
@@ -135,9 +136,10 @@ public class AccountsListFragment extends Fragment implements
      */
     private android.support.v7.widget.SearchView mSearchView;
 
-    public static AccountsListFragment newInstance(DisplayMode displayMode){
+    public static AccountsListFragment newInstance(FragmentPagerAdapter accountViewPagerAdapter, DisplayMode displayMode){
         AccountsListFragment fragment = new AccountsListFragment();
         fragment.mDisplayMode = displayMode;
+        fragment.accountViewPagerAdapter = accountViewPagerAdapter;
         return fragment;
     }
 
@@ -433,7 +435,6 @@ public class AccountsListFragment extends Fragment implements
 
         @Override
         public Cursor loadInBackground() {
-
             mDatabaseAdapter = AccountsDbAdapter.getInstance();
             Cursor cursor;
 
@@ -496,6 +497,7 @@ public class AccountsListFragment extends Fragment implements
             mAccountsDbAdapter = AccountsDbAdapter.getInstance();
 
             holder.accoundId = mAccountsDbAdapter.getID(accountUID);
+
             holder.accountName.setText(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseSchema.AccountEntry.COLUMN_NAME)));
 
             int subAccountCount = mAccountsDbAdapter.getSubAccountCount(accountUID);
@@ -570,7 +572,6 @@ public class AccountsListFragment extends Fragment implements
             holder.favoriteStatus.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
                     boolean isFavoriteAccount = mAccountsDbAdapter.isFavoriteAccount(accountUID);
 
                     ContentValues contentValues = new ContentValues();
@@ -586,13 +587,13 @@ public class AccountsListFragment extends Fragment implements
                     if (mDisplayMode == DisplayMode.FAVORITES) {
                         refresh();
                     }
+                    accountViewPagerAdapter.notifyDataSetChanged();
                 }
             });
 
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
                     onListItemClick(accountUID);
                 }
             });
@@ -611,9 +612,7 @@ public class AccountsListFragment extends Fragment implements
             long accoundId;
 
             public AccountViewHolder(View itemView) {
-
                 super(itemView);
-
                 ButterKnife.bind(this, itemView);
 
                 optionsMenu.setOnClickListener(new View.OnClickListener() {
