@@ -440,6 +440,7 @@ public class AccountFormFragment extends Fragment {
             setAccountTypeSelection(parentAccountType);
             loadParentAccountList(parentAccountType);
             setParentAccountSelection(mAccountsDbAdapter.getID(mParentAccountUID));
+            setSelectedCurrency(mAccountsDbAdapter.getCurrencyCode(mParentAccountUID));
         }
 
     }
